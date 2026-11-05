@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Controle de Gastos</string>
+
+    <!-- Login -->
+    <string name="login_title">Controle de Gastos</string>
+    <string name="login_subtitle">Entre com sua conta Google para continuar</string>
+    <string name="login_button">Entrar com Google</string>
+    <string name="login_error">Não foi possível entrar. Tente novamente.</string>
+
+    <!-- Navigation -->
+    <string name="nav_lancamentos">Lançamentos</string>
+    <string name="nav_novo_gasto">Novo gasto</string>
+    <string name="nav_categorias">Categorias</string>
+    <string name="nav_cartoes">Cartões</string>
+
+    <!-- Expense form -->
+    <string name="campo_valor">Valor</string>
+    <string name="campo_descricao">Descrição</string>
+    <string name="campo_data">Data</string>
+    <string name="campo_categoria">Categoria</string>
+    <string name="campo_forma_pagamento">Forma de pagamento</string>
+    <string name="campo_cartao">Cartão</string>
+    <string name="campo_parcelas">Número de parcelas</string>
+    <string name="salvar_gasto">Salvar gasto</string>
+    <string name="gasto_salvo">Gasto salvo com sucesso</string>
+
+    <!-- Payment methods -->
+    <string name="pagamento_dinheiro">Dinheiro</string>
+    <string name="pagamento_debito">Cartão de Débito</string>
+    <string name="pagamento_credito">Cartão de Crédito</string>
+    <string name="pagamento_pix">Pix</string>
+
+    <!-- Categories -->
+    <string name="gerenciar_categorias">Gerenciar categorias</string>
+    <string name="nova_categoria">Nova categoria</string>
+    <string name="categoria_alimentacao">Alimentação</string>
+    <string name="categoria_transporte">Transporte</string>
+    <string name="categoria_moradia">Moradia</string>
+    <string name="categoria_saude">Saúde</string>
+    <string name="categoria_lazer">Lazer</string>
+    <string name="categoria_outros">Outros</string>
+
+    <!-- Cards -->
+    <string name="gerenciar_cartoes">Gerenciar cartões</string>
+    <string name="novo_cartao">Novo cartão</string>
+    <string name="campo_apelido">Apelido do cartão</string>
+    <string name="campo_titular">Titular</string>
+    <string name="campo_banco">Banco</string>
+    <string name="campo_dia_fechamento">Dia de fechamento</string>
+    <string name="campo_dia_vencimento">Dia de vencimento</string>
+    <string name="salvar_cartao">Salvar cartão</string>
+
+    <!-- Listing -->
+    <string name="mes_atual">Mês atual</string>
+    <string name="mes_anterior">Mês anterior</string>
+    <string name="total_do_mes">Total do mês</string>
+    <string name="sem_lancamentos">Nenhum lançamento neste período</string>
+
+    <!-- Sync -->
+    <string name="sincronizando">Sincronizando…</string>
+    <string name="sincronizado">Sincronizado</string>
+    <string name="erro_sincronizacao">Erro ao sincronizar. Os dados ficam salvos localmente e tentaremos de novo mais tarde.</string>
+    <string name="sem_internet">Sem conexão. Os gastos serão sincronizados quando a internet voltar.</string>
+</resources>

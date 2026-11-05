@@ -1,0 +1,22 @@
+*.iml
+.gradle/
+/local.properties
+/.idea/
+.DS_Store
+/build/
+/captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+*.aab
+
+# Keystore - never commit signing secrets
+*.jks
+*.keystore
+keystore.properties
+
+# Google services / OAuth client config - contains project-specific IDs, kept local
+/app/src/main/res/values/secrets.xml
+
+# Gradle wrapper cache (jar is kept, dists are not)
+!gradle/wrapper/gradle-wrapper.jar

@@ -1,0 +1,147 @@
+package com.flpzarato.controlegastos.ui.cards
+
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExposedDropdownMenu
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+
+@Composable
+fun CardsScreen(viewModel: CardsViewModel = hiltViewModel()) {
+    val cards by viewModel.cards.collectAsState()
+    val knownUsers by viewModel.knownUsers.collectAsState()
+    val form by viewModel.form.collectAsState()
+
+    Scaffold { padding ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(16.dp),
+        ) {
+            item {
+                Column {
+                    Text("Novo cartão", style = MaterialTheme.typography.titleMedium)
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = form.nickname,
+                        onValueChange = viewModel::onNicknameChanged,
+                        label = { Text("Apelido do cartão") },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Spacer(Modifier.height(8.dp))
+
+                    HolderDropdown(
+                        users = knownUsers.map { it.email to it.displayName },
+                        selectedEmail = form.holderEmail,
+                        onSelected = viewModel::onHolderChanged,
+                    )
+                    Spacer(Modifier.height(8.dp))
+
+                    OutlinedTextField(
+                        value = form.bank,
+                        onValueChange = viewModel::onBankChanged,
+                        label = { Text("Banco") },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Row {
+                        OutlinedTextField(
+                            value = form.closingDay,
+                            onValueChange = viewModel::onClosingDayChanged,
+                            label = { Text("Dia de fechamento") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.weight(1f),
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = form.dueDay,
+                            onValueChange = viewModel::onDueDayChanged,
+                            label = { Text("Dia de vencimento") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+
+                    form.error?.let {
+                        Spacer(Modifier.height(8.dp))
+                        Text(it, color = MaterialTheme.colorScheme.error)
+                    }
+
+                    Spacer(Modifier.height(16.dp))
+                    Button(onClick = viewModel::save, modifier = Modifier.fillMaxWidth()) {
+                        Text("Salvar cartão")
+                    }
+
+                    Spacer(Modifier.height(24.dp))
+                    Text("Cartões cadastrados", style = MaterialTheme.typography.titleMedium)
+                }
+            }
+
+            items(cards, key = { it.id }) { card ->
+                ListItem(
+                    headlineContent = { Text(card.nickname) },
+                    supportingContent = { Text("${card.bank} · fecha dia ${card.closingDay} · vence dia ${card.dueDay}") },
+                    trailingContent = {
+                        IconButton(onClick = { viewModel.removeCard(card.id) }) {
+                            Icon(Icons.Filled.Delete, contentDescription = "Remover")
+                        }
+                    },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun HolderDropdown(
+    users: List<Pair<String, String>>,
+    selectedEmail: String,
+    onSelected: (String) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val selectedName = users.firstOrNull { it.first == selectedEmail }?.second.orEmpty()
+
+    ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
+        OutlinedTextField(
+            value = selectedName,
+            onValueChange = {},
+            readOnly = true,
+            label = { Text("Titular") },
+            modifier = Modifier.menuAnchor().fillMaxWidth(),
+        )
+        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            users.forEach { (email, name) ->
+                DropdownMenuItem(text = { Text(name) }, onClick = { onSelected(email); expanded = false })
+            }
+        }
+    }
+}
