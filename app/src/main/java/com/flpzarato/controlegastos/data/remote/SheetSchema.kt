@@ -14,22 +14,22 @@ object SheetSchema {
 
     // Column order matches ExpenseRowMapper.
     const val RANGE_LANCAMENTOS = "$TAB_LANCAMENTOS!A2:L"
-    const val HEADER_LANCAMENTOS = listOf(
+    val HEADER_LANCAMENTOS = listOf(
         "ID", "DataCompra", "Competencia", "Descricao", "CategoriaId",
         "ValorParcela", "ValorTotalOriginal", "Parcela", "FormaPagamento",
         "CartaoId", "QuemLancou", "Deletado",
     )
 
     const val RANGE_CATEGORIAS = "$TAB_CATEGORIAS!A2:C"
-    const val HEADER_CATEGORIAS = listOf("ID", "Nome", "Deletado")
+    val HEADER_CATEGORIAS = listOf("ID", "Nome", "Deletado")
 
     const val RANGE_CARTOES = "$TAB_CARTOES!A2:G"
-    const val HEADER_CARTOES = listOf(
+    val HEADER_CARTOES = listOf(
         "ID", "Apelido", "TitularEmail", "Banco", "DiaFechamento", "DiaVencimento", "Deletado",
     )
 
     const val RANGE_USUARIOS = "$TAB_USUARIOS!A2:B"
-    const val HEADER_USUARIOS = listOf("Email", "Nome")
+    val HEADER_USUARIOS = listOf("Email", "Nome")
 
     fun rowRange(tab: String, row: Int, lastColumn: String): String = "$tab!A$row:$lastColumn$row"
 }
