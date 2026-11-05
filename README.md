@@ -70,7 +70,7 @@ esse ID (ou a URL inteira) na tela de login do app na primeira vez que abrir.
    - Crie também um client do tipo **Android**, informando o `applicationId`
      (`com.flpzarato.controlegastos`) e o **SHA-1** do seu certificado de assinatura
      (para o debug, rode `./gradlew signingReport` e copie o SHA-1 da variante *debug*).
-5. Copie `app/src/main/res/values/secrets.xml.example` para
+5. Copie `secrets.xml.example` (raiz do projeto) para
    `app/src/main/res/values/secrets.xml` e cole o Client ID do tipo **Web** em
    `default_web_client_id`. Esse arquivo não é versionado no Git.
 
