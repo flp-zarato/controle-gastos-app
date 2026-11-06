@@ -4,6 +4,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 import java.math.BigDecimal
 import java.time.LocalDate
+import java.time.YearMonth
 
 class InstallmentCalculatorTest {
 
@@ -74,5 +75,39 @@ class InstallmentCalculatorTest {
     fun `pagamento em dinheiro usa o mes da propria compra`() {
         val competence = InstallmentCalculator.singleInstallmentCompetence(LocalDate.of(2026, 11, 5))
         assertEquals("2026-11", competence)
+    }
+
+    @Test
+    fun `fatura ja fechada empurra a competencia mais proxima para o mes seguinte`() {
+        val today = LocalDate.of(2026, 11, 20)
+        val competence = InstallmentCalculator.earliestOpenCompetenceMonth(cardClosingDay = 10, today = today)
+        assertEquals(YearMonth.of(2026, 12), competence)
+    }
+
+    @Test
+    fun `fatura ainda aberta mantem a competencia no mes atual`() {
+        val today = LocalDate.of(2026, 11, 5)
+        val competence = InstallmentCalculator.earliestOpenCompetenceMonth(cardClosingDay = 10, today = today)
+        assertEquals(YearMonth.of(2026, 11), competence)
+    }
+
+    @Test
+    fun `purchaseDateForCompetence e o inverso exato do calculo de competencia`() {
+        val target = YearMonth.of(2026, 12)
+        val closingDay = 10
+
+        val beforeClosing = InstallmentCalculator.purchaseDateForCompetence(target, dayOfMonth = 5, cardClosingDay = closingDay)
+        assertEquals(LocalDate.of(2026, 12, 5), beforeClosing)
+        assertEquals(
+            "2026-12",
+            InstallmentCalculator.calculate(BigDecimal("50.00"), 1, beforeClosing, closingDay)[0].competenceMonth,
+        )
+
+        val onOrAfterClosing = InstallmentCalculator.purchaseDateForCompetence(target, dayOfMonth = 15, cardClosingDay = closingDay)
+        assertEquals(LocalDate.of(2026, 11, 15), onOrAfterClosing)
+        assertEquals(
+            "2026-12",
+            InstallmentCalculator.calculate(BigDecimal("50.00"), 1, onOrAfterClosing, closingDay)[0].competenceMonth,
+        )
     }
 }

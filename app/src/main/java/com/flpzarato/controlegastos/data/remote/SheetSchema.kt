@@ -33,11 +33,12 @@ object SheetSchema {
     const val RANGE_USUARIOS = "$TAB_USUARIOS!A2:B"
     val HEADER_USUARIOS = listOf("Email", "Nome")
 
-    // Observacao was appended after Deletado for the same reason as Lançamentos above.
-    const val RANGE_RECORRENTES = "$TAB_RECORRENTES!A2:J"
+    // Observacao/MesesAntecedencia were appended after Deletado for the same reason as
+    // Lançamentos above.
+    const val RANGE_RECORRENTES = "$TAB_RECORRENTES!A2:K"
     val HEADER_RECORRENTES = listOf(
         "ID", "Descricao", "Valor", "CategoriaId", "FormaPagamento", "CartaoId", "DiaDoMes", "Ativo", "Deletado",
-        "Observacao",
+        "Observacao", "MesesAntecedencia",
     )
 
     fun rowRange(tab: String, row: Int, lastColumn: String): String = "$tab!A$row:$lastColumn$row"

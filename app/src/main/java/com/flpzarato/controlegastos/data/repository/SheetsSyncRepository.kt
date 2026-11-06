@@ -6,6 +6,7 @@ import com.flpzarato.controlegastos.data.local.dao.ExpenseDao
 import com.flpzarato.controlegastos.data.local.dao.RecurringExpenseDao
 import com.flpzarato.controlegastos.data.local.dao.UserDao
 import com.flpzarato.controlegastos.data.local.entity.CategoryEntity
+import com.flpzarato.controlegastos.data.local.entity.PaymentMethod
 import com.flpzarato.controlegastos.data.prefs.UserPreferences
 import com.flpzarato.controlegastos.data.remote.SheetSchema
 import com.flpzarato.controlegastos.data.remote.SheetsApi
@@ -16,9 +17,10 @@ import com.flpzarato.controlegastos.data.remote.toExpenseEntity
 import com.flpzarato.controlegastos.data.remote.toRecurringExpenseEntity
 import com.flpzarato.controlegastos.data.remote.toRow
 import com.flpzarato.controlegastos.data.remote.toUserEntity
+import com.flpzarato.controlegastos.domain.InstallmentCalculator
 import kotlinx.coroutines.flow.first
-import java.time.LocalDate
 import java.time.YearMonth
+import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -39,6 +41,8 @@ class SheetsSyncRepository @Inject constructor(
     private val expenseRepository: ExpenseRepository,
     private val userPreferences: UserPreferences,
 ) {
+    private val competenceFormatter = DateTimeFormatter.ofPattern("yyyy-MM")
+
     suspend fun sync(): Result<Unit> = runCatching {
         val spreadsheetId = userPreferences.spreadsheetId.first()
             ?: error("Nenhuma planilha configurada ainda")
@@ -120,37 +124,59 @@ class SheetsSyncRepository @Inject constructor(
     }
 
     /**
-     * For every active recurring template whose configured day has already passed this
-     * month, creates this month's expense if one hasn't been created yet (checked via
-     * [ExpenseDao.getByRecurringTemplateAndMonth]). Runs inside the same sync pass so the
-     * newly-dirty rows are picked up by [pushDirtyExpenses] right after, without scheduling
-     * a separate sync (which would cancel this one).
+     * Keeps a rolling forecast of [RecurringExpenseEntity.monthsAhead] competências
+     * populated for every active recurring template, starting from the current month (or,
+     * for a credit template, the card's next not-yet-closed invoice — so a bill is never
+     * forecast into an invoice that already closed). Each competência in the window gets
+     * exactly one expense, skipped if one already exists. Runs inside the same sync pass so
+     * the newly-dirty rows are picked up by [pushDirtyExpenses] right after, without
+     * scheduling a separate sync (which would cancel this one).
      */
     private suspend fun launchDueRecurringExpenses() {
-        val today = LocalDate.now()
         val signedInEmail = userPreferences.signedInEmail.first() ?: return
 
         for (template in recurringExpenseDao.getActiveTemplates()) {
             val day = template.dayOfMonth.coerceIn(1, 28)
-            if (today.dayOfMonth < day) continue
+            val monthsAhead = template.monthsAhead.coerceIn(1, 12)
 
-            val purchaseDate = today.withDayOfMonth(day)
-            val yearMonth = YearMonth.from(purchaseDate).toString()
-            val alreadyLaunched = expenseDao.getByRecurringTemplateAndMonth(template.id, yearMonth).isNotEmpty()
-            if (alreadyLaunched) continue
+            val card = if (template.paymentMethod == PaymentMethod.CREDITO) {
+                template.cardId?.let { cardDao.getById(it) } ?: continue
+            } else {
+                null
+            }
+            val startCompetence = if (card != null) {
+                InstallmentCalculator.earliestOpenCompetenceMonth(card.closingDay)
+            } else {
+                YearMonth.now()
+            }
 
-            expenseRepository.insertExpenseRows(
-                description = template.description,
-                totalAmount = template.amount,
-                categoryId = template.categoryId,
-                purchaseDate = purchaseDate,
-                paymentMethod = template.paymentMethod,
-                loggedByEmail = signedInEmail,
-                cardId = template.cardId,
-                installmentCount = 1,
-                observation = template.observation,
-                recurringTemplateId = template.id,
-            )
+            for (offset in 0 until monthsAhead) {
+                val targetCompetence = startCompetence.plusMonths(offset.toLong())
+                val competenceKey = targetCompetence.format(competenceFormatter)
+                val alreadyLaunched = expenseDao
+                    .getByRecurringTemplateAndCompetence(template.id, competenceKey)
+                    .isNotEmpty()
+                if (alreadyLaunched) continue
+
+                val purchaseDate = if (card != null) {
+                    InstallmentCalculator.purchaseDateForCompetence(targetCompetence, day, card.closingDay)
+                } else {
+                    targetCompetence.atDay(day)
+                }
+
+                expenseRepository.insertExpenseRows(
+                    description = template.description,
+                    totalAmount = template.amount,
+                    categoryId = template.categoryId,
+                    purchaseDate = purchaseDate,
+                    paymentMethod = template.paymentMethod,
+                    loggedByEmail = signedInEmail,
+                    cardId = template.cardId,
+                    installmentCount = 1,
+                    observation = template.observation,
+                    recurringTemplateId = template.id,
+                )
+            }
         }
     }
 
@@ -213,7 +239,7 @@ class SheetsSyncRepository @Inject constructor(
                 spreadsheetId,
                 SheetSchema.TAB_RECORRENTES,
                 SheetSchema.RANGE_RECORRENTES,
-                "J",
+                "K",
                 rowNumberById[template.id],
                 template.toRow(),
             )

@@ -30,6 +30,7 @@ data class RecurringFormState(
     val paymentMethod: PaymentMethod = PaymentMethod.DINHEIRO,
     val cardId: String? = null,
     val dayOfMonth: String = "1",
+    val monthsAhead: String = "3",
     val isLoading: Boolean = false,
     val isSaving: Boolean = false,
     val error: String? = null,
@@ -72,6 +73,7 @@ class RecurringFormViewModel @Inject constructor(
                     paymentMethod = existing.paymentMethod,
                     cardId = existing.cardId,
                     dayOfMonth = existing.dayOfMonth.toString(),
+                    monthsAhead = existing.monthsAhead.toString(),
                 )
             }
         }
@@ -90,6 +92,7 @@ class RecurringFormViewModel @Inject constructor(
     }
     fun onCardChanged(id: String) = update { it.copy(cardId = id) }
     fun onDayOfMonthChanged(value: String) = update { it.copy(dayOfMonth = value.filter(Char::isDigit).take(2)) }
+    fun onMonthsAheadChanged(value: String) = update { it.copy(monthsAhead = value.filter(Char::isDigit).take(2)) }
 
     private fun update(transform: (RecurringFormState) -> RecurringFormState) {
         _form.value = transform(_form.value)
@@ -102,6 +105,7 @@ class RecurringFormViewModel @Inject constructor(
         val amount = centsStringToBigDecimal(current.amount)
         val categoryId = current.categoryId
         val day = current.dayOfMonth.toIntOrNull()
+        val monthsAhead = current.monthsAhead.toIntOrNull()
         when {
             amount == null || amount <= BigDecimal.ZERO -> update { it.copy(error = "Informe um valor válido") }
             categoryId == null -> update { it.copy(error = "Escolha uma categoria") }
@@ -109,6 +113,8 @@ class RecurringFormViewModel @Inject constructor(
             current.paymentMethod == PaymentMethod.CREDITO && current.cardId == null ->
                 update { it.copy(error = "Escolha o cartão usado") }
             day == null || day !in 1..28 -> update { it.copy(error = "Dia do mês deve estar entre 1 e 28") }
+            monthsAhead == null || monthsAhead !in 1..12 ->
+                update { it.copy(error = "Meses de antecedência deve estar entre 1 e 12") }
             else -> viewModelScope.launch {
                 update { it.copy(isSaving = true, error = null) }
                 runCatching {
@@ -120,6 +126,7 @@ class RecurringFormViewModel @Inject constructor(
                         paymentMethod = current.paymentMethod,
                         cardId = current.cardId,
                         dayOfMonth = day,
+                        monthsAhead = monthsAhead,
                         observation = current.observation.trim().takeIf { it.isNotEmpty() },
                     )
                 }.onSuccess {

@@ -101,6 +101,15 @@ fun RecurringFormScreen(
                 modifier = Modifier.fillMaxWidth(),
             )
             Spacer(Modifier.height(12.dp))
+            OutlinedTextField(
+                value = form.monthsAhead,
+                onValueChange = viewModel::onMonthsAheadChanged,
+                label = { Text("Meses de antecedência (1-12)") },
+                supportingText = { Text("Quantos meses à frente ele aparece nas faturas/lançamentos") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Spacer(Modifier.height(12.dp))
 
             RecurringDropdown(
                 options = categories.map { it.id to it.name },

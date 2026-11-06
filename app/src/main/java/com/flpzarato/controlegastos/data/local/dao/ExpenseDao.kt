@@ -23,19 +23,23 @@ interface ExpenseDao {
     @Query("SELECT * FROM expenses WHERE dirty = 1")
     suspend fun getDirty(): List<ExpenseEntity>
 
-    /**
-     * The expense(s) already launched from a recurring template in a given calendar month
-     * (yearMonth is "yyyy-MM") — used both to avoid relaunching the same month twice, and to
-     * find+replace that month's instance when the template is edited afterwards. Keyed off
-     * [ExpenseEntity.purchaseDate] rather than competenceMonth, since a credit template's
-     * competência depends on its card's closing day and would otherwise have to be
-     * recomputed identically in two places.
-     */
+    /** The expense already launched from a recurring template for one specific competência (invoice month), if any. */
     @Query(
-        "SELECT * FROM expenses WHERE recurringTemplateId = :templateId AND purchaseDate LIKE :yearMonth || '%' " +
+        "SELECT * FROM expenses WHERE recurringTemplateId = :templateId AND competenceMonth = :competenceMonth " +
             "AND deleted = 0",
     )
-    suspend fun getByRecurringTemplateAndMonth(templateId: String, yearMonth: String): List<ExpenseEntity>
+    suspend fun getByRecurringTemplateAndCompetence(templateId: String, competenceMonth: String): List<ExpenseEntity>
+
+    /**
+     * Every still-forecast expense from a recurring template — competência [fromCompetence]
+     * or later ("yyyy-MM" strings sort chronologically). Used to clear the forecast window
+     * when a template is edited, paused or deleted, without ever touching past competências.
+     */
+    @Query(
+        "SELECT * FROM expenses WHERE recurringTemplateId = :templateId AND competenceMonth >= :fromCompetence " +
+            "AND deleted = 0",
+    )
+    suspend fun getByRecurringTemplateFromCompetence(templateId: String, fromCompetence: String): List<ExpenseEntity>
 
     @Upsert
     suspend fun upsert(expense: ExpenseEntity)

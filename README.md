@@ -48,7 +48,7 @@ na primeira linha (os dados começam na linha 2):
 | `Categorias` | ID, Nome, Deletado |
 | `Cartões` | ID, Apelido, TitularEmail, Banco, DiaFechamento, DiaVencimento, Deletado |
 | `Usuários` | Email, Nome |
-| `Recorrentes` | ID, Descricao, Valor, CategoriaId, FormaPagamento, CartaoId, DiaDoMes, Ativo, Deletado, Observacao |
+| `Recorrentes` | ID, Descricao, Valor, CategoriaId, FormaPagamento, CartaoId, DiaDoMes, Ativo, Deletado, Observacao, MesesAntecedencia |
 
 Compartilhe essa planilha (botão "Compartilhar") com a conta Google da sua esposa,
 dando permissão de **Editor**.

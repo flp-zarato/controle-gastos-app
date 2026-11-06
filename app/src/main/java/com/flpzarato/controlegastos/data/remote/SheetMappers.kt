@@ -96,6 +96,7 @@ fun List<String>.toUserEntity(): UserEntity? {
 fun RecurringExpenseEntity.toRow(): List<String> = listOf(
     id, description, amount.toPlainString(), categoryId, paymentMethod.name,
     cardId.orEmpty(), dayOfMonth.toString(), active.toString(), deleted.toString(), observation.orEmpty(),
+    monthsAhead.toString(),
 )
 
 fun List<String>.toRecurringExpenseEntity(): RecurringExpenseEntity? {
@@ -108,6 +109,7 @@ fun List<String>.toRecurringExpenseEntity(): RecurringExpenseEntity? {
         paymentMethod = cell(4)?.let { PaymentMethod.fromStorage(it) } ?: PaymentMethod.DINHEIRO,
         cardId = cell(5),
         dayOfMonth = cell(6)?.toIntOrNull() ?: 1,
+        monthsAhead = cell(10)?.toIntOrNull() ?: 3,
         observation = cell(9),
         active = cell(7)?.toBoolean() ?: true,
         dirty = false,

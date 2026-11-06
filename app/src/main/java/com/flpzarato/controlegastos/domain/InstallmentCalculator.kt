@@ -61,6 +61,23 @@ object InstallmentCalculator {
     }
 
     /**
+     * The earliest invoice a purchase made right now would land on — i.e. the next
+     * not-yet-closed fatura. Used to forecast a recurring expense forward without ever
+     * generating an entry for an invoice that has already closed.
+     */
+    fun earliestOpenCompetenceMonth(cardClosingDay: Int, today: LocalDate = LocalDate.now()): YearMonth =
+        firstCompetenceMonth(today, cardClosingDay)
+
+    /**
+     * Inverse of [firstCompetenceMonth] for a single (non-split) charge: the purchase date,
+     * on [dayOfMonth] of the right calendar month, that lands exactly on [targetCompetence].
+     */
+    fun purchaseDateForCompetence(targetCompetence: YearMonth, dayOfMonth: Int, cardClosingDay: Int): LocalDate {
+        val month = if (dayOfMonth < cardClosingDay) targetCompetence else targetCompetence.minusMonths(1)
+        return month.atDay(dayOfMonth)
+    }
+
+    /**
      * Divides [total] into [count] parts of two decimal places. Since the division
      * may not be exact (e.g. R$100,00 / 3), the remainder is added to the last
      * installment so the parcelas always add back up to the original total.
