@@ -33,6 +33,9 @@ class ExpenseRepository @Inject constructor(
     fun observeMonths(months: List<YearMonth>): Flow<List<ExpenseEntity>> =
         expenseDao.observeByCompetenceMonths(months.map { it.format(competenceFormatter) })
 
+    suspend fun getGroup(installmentGroupId: String): List<ExpenseEntity> =
+        expenseDao.getByGroup(installmentGroupId)
+
     suspend fun addExpense(
         description: String,
         totalAmount: BigDecimal,
@@ -100,5 +103,34 @@ class ExpenseRepository @Inject constructor(
     suspend fun deleteGroup(installmentGroupId: String) {
         expenseDao.markGroupDeleted(installmentGroupId)
         syncScheduler.requestImmediateSync()
+    }
+
+    /**
+     * Editing never patches rows in place: it marks the whole old group deleted and
+     * creates a brand new one from the edited fields, so installments/competências are
+     * always recalculated consistently rather than drifting out of sync with each other.
+     */
+    suspend fun updateExpense(
+        oldGroupId: String,
+        description: String,
+        totalAmount: BigDecimal,
+        categoryId: String,
+        purchaseDate: LocalDate,
+        paymentMethod: PaymentMethod,
+        loggedByEmail: String,
+        cardId: String?,
+        installmentCount: Int,
+    ) {
+        expenseDao.markGroupDeleted(oldGroupId)
+        addExpense(
+            description = description,
+            totalAmount = totalAmount,
+            categoryId = categoryId,
+            purchaseDate = purchaseDate,
+            paymentMethod = paymentMethod,
+            loggedByEmail = loggedByEmail,
+            cardId = cardId,
+            installmentCount = installmentCount,
+        )
     }
 }

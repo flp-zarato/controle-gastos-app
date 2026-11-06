@@ -1,6 +1,8 @@
 package com.flpzarato.controlegastos.ui.expense
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Row
@@ -11,16 +13,25 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -28,12 +39,20 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.flpzarato.controlegastos.data.local.entity.PaymentMethod
 import com.flpzarato.controlegastos.ui.common.ControleGastosTopBar
+import java.time.Instant
+import java.time.LocalDate
+import java.time.YearMonth
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
+import java.time.format.TextStyle
+import java.util.Locale
 
 @Composable
 fun AddExpenseScreen(
@@ -53,8 +72,20 @@ fun AddExpenseScreen(
     }
 
     Scaffold(
-        topBar = { ControleGastosTopBar(title = "Novo gasto", onBack = onBack) },
+        topBar = {
+            ControleGastosTopBar(
+                title = if (viewModel.isEditing) "Editar gasto" else "Novo gasto",
+                onBack = onBack,
+            )
+        },
     ) { padding ->
+        if (form.isLoadingForEdit) {
+            Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+            return@Scaffold
+        }
+
         Column(
             modifier = Modifier
                 .padding(padding)
@@ -75,6 +106,9 @@ fun AddExpenseScreen(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 modifier = Modifier.fillMaxWidth(),
             )
+            Spacer(Modifier.height(12.dp))
+
+            PurchaseDateField(date = form.purchaseDate, onDateSelected = viewModel::onDateChanged)
             Spacer(Modifier.height(12.dp))
 
             CategoryDropdown(
@@ -125,10 +159,83 @@ fun AddExpenseScreen(
                 enabled = !form.isSaving,
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text(if (form.isSaving) "Salvando…" else "Salvar gasto")
+                Text(
+                    when {
+                        form.isSaving -> "Salvando…"
+                        viewModel.isEditing -> "Salvar alterações"
+                        else -> "Salvar gasto"
+                    },
+                )
             }
         }
     }
+
+    form.invoiceWarningMonth?.let { competence ->
+        AlertDialog(
+            onDismissRequest = viewModel::dismissInvoiceWarning,
+            title = { Text("Atenção") },
+            text = {
+                Text(
+                    "Como esse gasto foi feito no cartão de crédito, ele será lançado na fatura de " +
+                        "${formatCompetenceLabel(competence)}, com base no fechamento do cartão, e não " +
+                        "necessariamente na fatura atual. Confira se está correto antes de salvar.",
+                )
+            },
+            confirmButton = { TextButton(onClick = viewModel::confirmInvoiceWarning) { Text("Confirmar") } },
+            dismissButton = { TextButton(onClick = viewModel::dismissInvoiceWarning) { Text("Revisar") } },
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PurchaseDateField(date: LocalDate, onDateSelected: (LocalDate) -> Unit) {
+    var showPicker by remember { mutableStateOf(false) }
+    val formatter = remember { DateTimeFormatter.ofPattern("dd/MM/yyyy") }
+
+    OutlinedTextField(
+        value = date.format(formatter),
+        onValueChange = {},
+        readOnly = true,
+        label = { Text("Data da compra") },
+        trailingIcon = {
+            IconButton(onClick = { showPicker = true }) {
+                Icon(Icons.Filled.CalendarMonth, contentDescription = "Selecionar data")
+            }
+        },
+        modifier = Modifier.fillMaxWidth(),
+    )
+
+    if (showPicker) {
+        val initialMillis = date.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+        val state = rememberDatePickerState(
+            initialSelectedDateMillis = initialMillis,
+            selectableDates = object : SelectableDates {
+                override fun isSelectableDate(utcTimeMillis: Long): Boolean =
+                    utcTimeMillis <= System.currentTimeMillis()
+            },
+        )
+        DatePickerDialog(
+            onDismissRequest = { showPicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    state.selectedDateMillis?.let { millis ->
+                        onDateSelected(Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate())
+                    }
+                    showPicker = false
+                }) { Text("OK") }
+            },
+            dismissButton = { TextButton(onClick = { showPicker = false }) { Text("Cancelar") } },
+        ) {
+            DatePicker(state = state)
+        }
+    }
+}
+
+private fun formatCompetenceLabel(yyyyMM: String): String {
+    val yearMonth = YearMonth.parse(yyyyMM)
+    val monthName = yearMonth.month.getDisplayName(TextStyle.FULL, Locale("pt", "BR"))
+    return "${monthName.replaceFirstChar { it.uppercase() }}/${yearMonth.year}"
 }
 
 private fun PaymentMethod.label(): String = when (this) {

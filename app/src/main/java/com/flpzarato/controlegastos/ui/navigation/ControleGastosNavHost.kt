@@ -3,6 +3,7 @@ package com.flpzarato.controlegastos.ui.navigation
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CreditCard
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material3.Icon
@@ -15,27 +16,35 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.flpzarato.controlegastos.ui.cards.CardsScreen
 import com.flpzarato.controlegastos.ui.categories.CategoriesScreen
 import com.flpzarato.controlegastos.ui.expense.AddExpenseScreen
+import com.flpzarato.controlegastos.ui.home.HomeScreen
 import com.flpzarato.controlegastos.ui.listing.ExpenseListScreen
 import com.flpzarato.controlegastos.ui.login.LoginScreen
 
 object Routes {
     const val LOGIN = "login"
+    const val INICIO = "inicio"
     const val LANCAMENTOS = "lancamentos"
     const val NOVO_GASTO = "novo_gasto"
+    const val EDITAR_GASTO = "editar_gasto"
     const val CATEGORIAS = "categorias"
     const val CARTOES = "cartoes"
+
+    fun editarGastoRoute(groupId: String) = "$EDITAR_GASTO/$groupId"
 }
 
 private data class BottomDestination(val route: String, val label: String, val icon: androidx.compose.ui.graphics.vector.ImageVector)
 
 private val bottomDestinations = listOf(
+    BottomDestination(Routes.INICIO, "Início", Icons.Filled.Home),
     BottomDestination(Routes.LANCAMENTOS, "Lançamentos", Icons.Filled.List),
     BottomDestination(Routes.CATEGORIAS, "Categorias", Icons.Filled.Category),
     BottomDestination(Routes.CARTOES, "Cartões", Icons.Filled.CreditCard),
@@ -77,15 +86,28 @@ fun ControleGastosNavHost() {
         ) {
             composable(Routes.LOGIN) {
                 LoginScreen(onLoggedIn = {
-                    navController.navigate(Routes.LANCAMENTOS) {
+                    navController.navigate(Routes.INICIO) {
                         popUpTo(Routes.LOGIN) { inclusive = true }
                     }
                 })
             }
+            composable(Routes.INICIO) { HomeScreen() }
             composable(Routes.LANCAMENTOS) {
-                ExpenseListScreen(onAddExpense = { navController.navigate(Routes.NOVO_GASTO) })
+                ExpenseListScreen(
+                    onAddExpense = { navController.navigate(Routes.NOVO_GASTO) },
+                    onEditExpense = { groupId -> navController.navigate(Routes.editarGastoRoute(groupId)) },
+                )
             }
             composable(Routes.NOVO_GASTO) {
+                AddExpenseScreen(
+                    onSaved = { navController.popBackStack() },
+                    onBack = { navController.popBackStack() },
+                )
+            }
+            composable(
+                route = "${Routes.EDITAR_GASTO}/{groupId}",
+                arguments = listOf(navArgument("groupId") { type = NavType.StringType }),
+            ) {
                 AddExpenseScreen(
                     onSaved = { navController.popBackStack() },
                     onBack = { navController.popBackStack() },

@@ -1,5 +1,6 @@
 package com.flpzarato.controlegastos.ui.expense
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.flpzarato.controlegastos.data.local.entity.CardEntity
@@ -9,6 +10,7 @@ import com.flpzarato.controlegastos.data.prefs.UserPreferences
 import com.flpzarato.controlegastos.data.repository.CardRepository
 import com.flpzarato.controlegastos.data.repository.CategoryRepository
 import com.flpzarato.controlegastos.data.repository.ExpenseRepository
+import com.flpzarato.controlegastos.domain.InstallmentCalculator
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -30,8 +32,15 @@ data class AddExpenseFormState(
     val cardId: String? = null,
     val installmentCount: String = "1",
     val isSaving: Boolean = false,
+    val isLoadingForEdit: Boolean = false,
     val error: String? = null,
     val saved: Boolean = false,
+    /** Non-null while the credit-card invoice warning dialog is awaiting confirmation; holds the computed "yyyy-MM". */
+    val invoiceWarningMonth: String? = null,
+    /** Set only when editing: who originally logged this, preserved instead of swapped to the editor. */
+    val originalLoggedByEmail: String? = null,
+    /** Set only when editing: the group's current competência, used as the baseline the warning compares against. */
+    val originalCompetenceMonth: String? = null,
 )
 
 @HiltViewModel
@@ -40,7 +49,11 @@ class AddExpenseViewModel @Inject constructor(
     categoryRepository: CategoryRepository,
     cardRepository: CardRepository,
     private val userPreferences: UserPreferences,
+    savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
+
+    private val editingGroupId: String? = savedStateHandle["groupId"]
+    val isEditing: Boolean = editingGroupId != null
 
     val categories: StateFlow<List<CategoryEntity>> = categoryRepository.observeActive()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
@@ -48,8 +61,31 @@ class AddExpenseViewModel @Inject constructor(
     val cards: StateFlow<List<CardEntity>> = cardRepository.observeActive()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    private val _form = MutableStateFlow(AddExpenseFormState())
+    private val _form = MutableStateFlow(AddExpenseFormState(isLoadingForEdit = isEditing))
     val form: StateFlow<AddExpenseFormState> = _form.asStateFlow()
+
+    init {
+        editingGroupId?.let { groupId ->
+            viewModelScope.launch {
+                val original = expenseRepository.getGroup(groupId).minByOrNull { it.installmentNumber }
+                if (original == null) {
+                    update { it.copy(isLoadingForEdit = false, error = "Lançamento não encontrado") }
+                    return@launch
+                }
+                _form.value = AddExpenseFormState(
+                    description = original.description,
+                    amount = (original.totalAmount ?: original.installmentAmount).toPlainString(),
+                    categoryId = original.categoryId,
+                    purchaseDate = original.purchaseDate,
+                    paymentMethod = original.paymentMethod,
+                    cardId = original.cardId,
+                    installmentCount = original.installmentCount.toString(),
+                    originalLoggedByEmail = original.loggedByEmail,
+                    originalCompetenceMonth = original.competenceMonth,
+                )
+            }
+        }
+    }
 
     fun onDescriptionChanged(value: String) = update { it.copy(description = value) }
     fun onAmountChanged(value: String) = update { it.copy(amount = value) }
@@ -65,10 +101,19 @@ class AddExpenseViewModel @Inject constructor(
         _form.value = transform(_form.value)
     }
 
-    fun save() {
+    fun save() = attemptSave(skipWarning = false)
+
+    fun confirmInvoiceWarning() = attemptSave(skipWarning = true)
+
+    fun dismissInvoiceWarning() = update { it.copy(invoiceWarningMonth = null) }
+
+    fun consumeSavedFlag() = update { it.copy(saved = false) }
+
+    private fun attemptSave(skipWarning: Boolean) {
         val current = _form.value
         val amount = current.amount.replace(",", ".").toBigDecimalOrNull()
         val categoryId = current.categoryId
+        val installmentCount = current.installmentCount.toIntOrNull()?.coerceAtLeast(1) ?: 1
         when {
             amount == null || amount <= BigDecimal.ZERO -> update { it.copy(error = "Informe um valor válido") }
             categoryId == null -> update { it.copy(error = "Escolha uma categoria") }
@@ -76,19 +121,56 @@ class AddExpenseViewModel @Inject constructor(
             current.paymentMethod == PaymentMethod.CREDITO && current.cardId == null ->
                 update { it.copy(error = "Escolha o cartão usado") }
             else -> viewModelScope.launch {
-                update { it.copy(isSaving = true, error = null) }
+                if (!skipWarning && current.paymentMethod == PaymentMethod.CREDITO) {
+                    val card = cards.value.firstOrNull { it.id == current.cardId }
+                    if (card != null) {
+                        val newCompetence = InstallmentCalculator.calculate(
+                            totalAmount = amount,
+                            installmentCount = installmentCount,
+                            purchaseDate = current.purchaseDate,
+                            cardClosingDay = card.closingDay,
+                        ).first().competenceMonth
+                        // Creating: compare against the actual current month. Editing: compare
+                        // against the group's own prior competência, so untouched old expenses
+                        // don't re-trigger the warning just for having a past purchase date.
+                        val baseline = current.originalCompetenceMonth
+                            ?: InstallmentCalculator.singleInstallmentCompetence(LocalDate.now())
+                        if (newCompetence != baseline) {
+                            update { it.copy(invoiceWarningMonth = newCompetence, error = null) }
+                            return@launch
+                        }
+                    }
+                }
+
+                update { it.copy(invoiceWarningMonth = null, isSaving = true, error = null) }
                 runCatching {
-                    val email = requireNotNull(userPreferences.signedInEmail.first()) { "Usuário não autenticado" }
-                    expenseRepository.addExpense(
-                        description = current.description.trim(),
-                        totalAmount = amount,
-                        categoryId = categoryId,
-                        purchaseDate = current.purchaseDate,
-                        paymentMethod = current.paymentMethod,
-                        loggedByEmail = email,
-                        cardId = current.cardId,
-                        installmentCount = current.installmentCount.toIntOrNull()?.coerceAtLeast(1) ?: 1,
-                    )
+                    val email = current.originalLoggedByEmail
+                        ?: requireNotNull(userPreferences.signedInEmail.first()) { "Usuário não autenticado" }
+                    val groupId = editingGroupId
+                    if (groupId != null) {
+                        expenseRepository.updateExpense(
+                            oldGroupId = groupId,
+                            description = current.description.trim(),
+                            totalAmount = amount,
+                            categoryId = categoryId,
+                            purchaseDate = current.purchaseDate,
+                            paymentMethod = current.paymentMethod,
+                            loggedByEmail = email,
+                            cardId = current.cardId,
+                            installmentCount = installmentCount,
+                        )
+                    } else {
+                        expenseRepository.addExpense(
+                            description = current.description.trim(),
+                            totalAmount = amount,
+                            categoryId = categoryId,
+                            purchaseDate = current.purchaseDate,
+                            paymentMethod = current.paymentMethod,
+                            loggedByEmail = email,
+                            cardId = current.cardId,
+                            installmentCount = installmentCount,
+                        )
+                    }
                 }.onSuccess {
                     _form.value = AddExpenseFormState(saved = true)
                 }.onFailure { e ->
@@ -97,6 +179,4 @@ class AddExpenseViewModel @Inject constructor(
             }
         }
     }
-
-    fun consumeSavedFlag() = update { it.copy(saved = false) }
 }
