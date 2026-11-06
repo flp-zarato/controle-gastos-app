@@ -16,10 +16,6 @@ class CategoriesViewModel @Inject constructor(
     private val categoryRepository: CategoryRepository,
 ) : ViewModel() {
 
-    init {
-        viewModelScope.launch { categoryRepository.ensureSeeded() }
-    }
-
     val categories: StateFlow<List<CategoryEntity>> = categoryRepository.observeActive()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 

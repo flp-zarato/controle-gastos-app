@@ -33,6 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.flpzarato.controlegastos.ui.common.ControleGastosTopBar
 
 @Composable
 fun CardsScreen(viewModel: CardsViewModel = hiltViewModel()) {
@@ -40,7 +41,9 @@ fun CardsScreen(viewModel: CardsViewModel = hiltViewModel()) {
     val knownUsers by viewModel.knownUsers.collectAsState()
     val form by viewModel.form.collectAsState()
 
-    Scaffold { padding ->
+    Scaffold(
+        topBar = { ControleGastosTopBar(title = "Cartões") },
+    ) { padding ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()

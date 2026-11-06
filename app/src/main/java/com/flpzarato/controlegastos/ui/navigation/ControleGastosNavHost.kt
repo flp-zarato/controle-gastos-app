@@ -86,7 +86,10 @@ fun ControleGastosNavHost() {
                 ExpenseListScreen(onAddExpense = { navController.navigate(Routes.NOVO_GASTO) })
             }
             composable(Routes.NOVO_GASTO) {
-                AddExpenseScreen(onSaved = { navController.popBackStack() })
+                AddExpenseScreen(
+                    onSaved = { navController.popBackStack() },
+                    onBack = { navController.popBackStack() },
+                )
             }
             composable(Routes.CATEGORIAS) { CategoriesScreen() }
             composable(Routes.CARTOES) { CardsScreen() }

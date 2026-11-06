@@ -26,6 +26,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.flpzarato.controlegastos.ui.common.ControleGastosTopBar
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -38,6 +39,7 @@ fun ExpenseListScreen(
     val currencyFormat = remember(Locale("pt", "BR")) { NumberFormat.getCurrencyInstance(Locale("pt", "BR")) }
 
     Scaffold(
+        topBar = { ControleGastosTopBar(title = "Lançamentos") },
         floatingActionButton = {
             FloatingActionButton(onClick = onAddExpense) {
                 Icon(Icons.Filled.Add, contentDescription = "Novo gasto")

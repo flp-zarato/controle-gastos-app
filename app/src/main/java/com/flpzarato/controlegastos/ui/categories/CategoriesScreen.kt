@@ -26,13 +26,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.flpzarato.controlegastos.ui.common.ControleGastosTopBar
 
 @Composable
 fun CategoriesScreen(viewModel: CategoriesViewModel = hiltViewModel()) {
     val categories by viewModel.categories.collectAsState()
     var newCategoryName by remember { mutableStateOf("") }
 
-    Scaffold { padding ->
+    Scaffold(
+        topBar = { ControleGastosTopBar(title = "Categorias") },
+    ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
             Row(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
                 OutlinedTextField(

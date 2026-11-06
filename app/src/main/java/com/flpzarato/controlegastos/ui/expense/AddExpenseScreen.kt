@@ -33,10 +33,12 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.flpzarato.controlegastos.data.local.entity.PaymentMethod
+import com.flpzarato.controlegastos.ui.common.ControleGastosTopBar
 
 @Composable
 fun AddExpenseScreen(
     onSaved: () -> Unit,
+    onBack: () -> Unit,
     viewModel: AddExpenseViewModel = hiltViewModel(),
 ) {
     val form by viewModel.form.collectAsState()
@@ -50,7 +52,9 @@ fun AddExpenseScreen(
         }
     }
 
-    Scaffold { padding ->
+    Scaffold(
+        topBar = { ControleGastosTopBar(title = "Novo gasto", onBack = onBack) },
+    ) { padding ->
         Column(
             modifier = Modifier
                 .padding(padding)

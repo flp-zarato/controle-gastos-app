@@ -14,13 +14,6 @@ class CategoryRepository @Inject constructor(
 ) {
     fun observeActive(): Flow<List<CategoryEntity>> = categoryDao.observeActive()
 
-    suspend fun ensureSeeded() {
-        if (categoryDao.count() == 0) {
-            categoryDao.upsertAll(CategoryEntity.defaultSeed().map { it.copy(dirty = true) })
-            syncScheduler.requestImmediateSync()
-        }
-    }
-
     suspend fun addCategory(name: String) {
         categoryDao.upsert(CategoryEntity(name = name, dirty = true))
         syncScheduler.requestImmediateSync()

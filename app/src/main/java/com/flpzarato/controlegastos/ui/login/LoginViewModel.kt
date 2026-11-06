@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.flpzarato.controlegastos.data.prefs.UserPreferences
 import com.flpzarato.controlegastos.data.remote.auth.GoogleAuthManager
 import com.flpzarato.controlegastos.data.remote.auth.SheetsAuthorizationOutcome
+import com.flpzarato.controlegastos.data.repository.SheetsSyncRepository
 import com.flpzarato.controlegastos.sync.SyncScheduler
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,7 +20,7 @@ sealed interface LoginUiState {
     data object Idle : LoginUiState
     data object Loading : LoginUiState
     data class NeedsConsent(val pendingIntent: PendingIntent) : LoginUiState
-    data object NeedsSpreadsheetId : LoginUiState
+    data class NeedsSpreadsheetId(val error: String? = null) : LoginUiState
     data object Done : LoginUiState
     data class Error(val message: String) : LoginUiState
 }
@@ -29,6 +30,7 @@ class LoginViewModel @Inject constructor(
     private val authManager: GoogleAuthManager,
     private val userPreferences: UserPreferences,
     private val syncScheduler: SyncScheduler,
+    private val syncRepository: SheetsSyncRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow<LoginUiState>(LoginUiState.Idle)
@@ -64,13 +66,23 @@ class LoginViewModel @Inject constructor(
         viewModelScope.launch {
             val id = extractSpreadsheetId(rawInput)
             if (id.isBlank()) {
-                _state.value = LoginUiState.Error("Cole o ID ou o link da planilha")
+                _state.value = LoginUiState.NeedsSpreadsheetId(error = "Cole o ID ou o link da planilha")
                 return@launch
             }
+            _state.value = LoginUiState.Loading
             userPreferences.saveSpreadsheetId(id)
             syncScheduler.schedulePeriodicSync()
-            syncScheduler.requestImmediateSync()
-            _state.value = LoginUiState.Done
+            // Awaited (not fired via WorkManager) so categories/cards from the sheet — or the
+            // seeded defaults if the sheet has none yet — are in Room before we ever show the
+            // main app; otherwise "Adicionar gasto" could open with an empty category dropdown.
+            syncRepository.sync()
+                .onSuccess { _state.value = LoginUiState.Done }
+                .onFailure {
+                    _state.value = LoginUiState.NeedsSpreadsheetId(
+                        error = "Não foi possível acessar a planilha. Confira o ID/link, sua conexão, " +
+                            "e se a planilha foi compartilhada com este e-mail, e tente novamente.",
+                    )
+                }
         }
     }
 
@@ -80,7 +92,7 @@ class LoginViewModel @Inject constructor(
             syncScheduler.requestImmediateSync()
             LoginUiState.Done
         } else {
-            LoginUiState.NeedsSpreadsheetId
+            LoginUiState.NeedsSpreadsheetId()
         }
     }
 

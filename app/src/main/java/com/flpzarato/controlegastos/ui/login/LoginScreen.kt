@@ -71,7 +71,10 @@ fun LoginScreen(
             )
 
             when (val s = state) {
-                is LoginUiState.NeedsSpreadsheetId -> SpreadsheetIdForm(onSubmit = viewModel::onSpreadsheetIdSubmitted)
+                is LoginUiState.NeedsSpreadsheetId -> SpreadsheetIdForm(
+                    onSubmit = viewModel::onSpreadsheetIdSubmitted,
+                    error = s.error,
+                )
                 is LoginUiState.Loading -> CircularProgressIndicator()
                 is LoginUiState.Error -> {
                     Text(s.message, color = MaterialTheme.colorScheme.error)
@@ -88,7 +91,7 @@ fun LoginScreen(
 }
 
 @Composable
-private fun SpreadsheetIdForm(onSubmit: (String) -> Unit) {
+private fun SpreadsheetIdForm(onSubmit: (String) -> Unit, error: String? = null) {
     var text by remember { mutableStateOf("") }
     OutlinedTextField(
         value = text,
@@ -96,6 +99,13 @@ private fun SpreadsheetIdForm(onSubmit: (String) -> Unit) {
         label = { Text("ID ou link da planilha compartilhada") },
         modifier = Modifier.fillMaxWidth(),
     )
+    error?.let {
+        Text(
+            it,
+            color = MaterialTheme.colorScheme.error,
+            modifier = Modifier.padding(top = 8.dp),
+        )
+    }
     Button(onClick = { onSubmit(text) }, modifier = Modifier.padding(top = 16.dp)) {
         Text("Continuar")
     }

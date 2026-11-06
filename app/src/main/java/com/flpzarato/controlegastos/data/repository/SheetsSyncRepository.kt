@@ -4,6 +4,7 @@ import com.flpzarato.controlegastos.data.local.dao.CardDao
 import com.flpzarato.controlegastos.data.local.dao.CategoryDao
 import com.flpzarato.controlegastos.data.local.dao.ExpenseDao
 import com.flpzarato.controlegastos.data.local.dao.UserDao
+import com.flpzarato.controlegastos.data.local.entity.CategoryEntity
 import com.flpzarato.controlegastos.data.prefs.UserPreferences
 import com.flpzarato.controlegastos.data.remote.SheetSchema
 import com.flpzarato.controlegastos.data.remote.SheetsApi
@@ -75,6 +76,19 @@ class SheetsSyncRepository @Inject constructor(
         val dirtyIds = categoryDao.getDirty().map { it.id }.toSet()
         val remote = rows.mapNotNull { it.toCategoryEntity() }.filter { it.id !in dirtyIds }
         if (remote.isNotEmpty()) categoryDao.upsertAll(remote)
+        ensureDefaultCategoriesSeeded()
+    }
+
+    /**
+     * Runs only after a pull, so it only fires when the shared "Categorias" tab is truly
+     * empty (nobody has ever synced categories into it yet) — never on a second device
+     * joining a sheet that already has categories, which would otherwise create duplicates.
+     * The seeded rows are marked dirty so the push step below writes them to the sheet.
+     */
+    private suspend fun ensureDefaultCategoriesSeeded() {
+        if (categoryDao.count() == 0) {
+            categoryDao.upsertAll(CategoryEntity.defaultSeed().map { it.copy(dirty = true) })
+        }
     }
 
     private suspend fun pullCards(rows: List<List<String>>) {
