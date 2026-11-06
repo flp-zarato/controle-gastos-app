@@ -28,6 +28,7 @@ class RecurringExpenseRepository @Inject constructor(
         paymentMethod: PaymentMethod,
         cardId: String?,
         dayOfMonth: Int,
+        observation: String? = null,
     ) {
         require(dayOfMonth in 1..28) { "Dia do mês deve estar entre 1 e 28" }
         val existingActive = id?.let { recurringExpenseDao.getById(it)?.active } ?: true
@@ -40,6 +41,7 @@ class RecurringExpenseRepository @Inject constructor(
                 paymentMethod = paymentMethod,
                 cardId = cardId,
                 dayOfMonth = dayOfMonth,
+                observation = observation,
                 active = existingActive,
                 dirty = true,
             ),

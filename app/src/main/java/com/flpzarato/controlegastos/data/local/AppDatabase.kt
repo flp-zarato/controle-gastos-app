@@ -19,7 +19,7 @@ import com.flpzarato.controlegastos.data.local.entity.UserEntity
         ExpenseEntity::class, CategoryEntity::class, CardEntity::class, UserEntity::class,
         RecurringExpenseEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)

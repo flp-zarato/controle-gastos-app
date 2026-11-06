@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.flpzarato.controlegastos.data.local.entity.PaymentMethod
 import com.flpzarato.controlegastos.ui.common.ControleGastosTopBar
+import com.flpzarato.controlegastos.ui.common.CurrencyAmountField
 import com.flpzarato.controlegastos.ui.common.formatCompetenceLabel
 import java.time.Instant
 import java.time.LocalDate
@@ -97,25 +98,15 @@ fun AddExpenseScreen(
                 modifier = Modifier.fillMaxWidth(),
             )
             Spacer(Modifier.height(12.dp))
-            OutlinedTextField(
-                value = form.amount,
-                onValueChange = viewModel::onAmountChanged,
-                label = { Text("Valor (R$)") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+            CurrencyAmountField(
+                digitsValue = form.amount,
+                onDigitsChanged = viewModel::onAmountChanged,
+                label = "Valor (R$)",
                 modifier = Modifier.fillMaxWidth(),
             )
             Spacer(Modifier.height(12.dp))
 
             PurchaseDateField(date = form.purchaseDate, onDateSelected = viewModel::onDateChanged)
-            Spacer(Modifier.height(12.dp))
-
-            OutlinedTextField(
-                value = form.observation,
-                onValueChange = viewModel::onObservationChanged,
-                label = { Text("Observação (opcional)") },
-                supportingText = { Text("${form.observation.length}/$OBSERVATION_MAX_LENGTH") },
-                modifier = Modifier.fillMaxWidth(),
-            )
             Spacer(Modifier.height(12.dp))
 
             CategoryDropdown(
@@ -151,6 +142,14 @@ fun AddExpenseScreen(
                     onValueChange = viewModel::onInstallmentCountChanged,
                     label = { Text("Número de parcelas") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Spacer(Modifier.height(12.dp))
+                OutlinedTextField(
+                    value = form.observation,
+                    onValueChange = viewModel::onObservationChanged,
+                    label = { Text("Observação (opcional)") },
+                    supportingText = { Text("${form.observation.length}/$OBSERVATION_MAX_LENGTH") },
                     modifier = Modifier.fillMaxWidth(),
                 )
             }

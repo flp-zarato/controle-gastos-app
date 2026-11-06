@@ -21,6 +21,8 @@ data class RecurringExpenseEntity(
     val cardId: String?,
     /** Day of the month (1-28) the expense is launched on. */
     val dayOfMonth: Int,
+    /** Free-text note, capped at 30 chars by the UI; carried over to every expense this template launches. */
+    val observation: String? = null,
     /** False when paused: no new months are launched, but past generated expenses stay untouched. */
     val active: Boolean = true,
     val dirty: Boolean = false,

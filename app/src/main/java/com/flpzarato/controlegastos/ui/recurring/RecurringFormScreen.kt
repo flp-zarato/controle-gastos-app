@@ -38,6 +38,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.flpzarato.controlegastos.data.local.entity.PaymentMethod
 import com.flpzarato.controlegastos.ui.common.ControleGastosTopBar
+import com.flpzarato.controlegastos.ui.common.CurrencyAmountField
+import com.flpzarato.controlegastos.ui.expense.OBSERVATION_MAX_LENGTH
 
 @Composable
 fun RecurringFormScreen(
@@ -84,11 +86,10 @@ fun RecurringFormScreen(
                 modifier = Modifier.fillMaxWidth(),
             )
             Spacer(Modifier.height(12.dp))
-            OutlinedTextField(
-                value = form.amount,
-                onValueChange = viewModel::onAmountChanged,
-                label = { Text("Valor (R$)") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+            CurrencyAmountField(
+                digitsValue = form.amount,
+                onDigitsChanged = viewModel::onAmountChanged,
+                label = "Valor (R$)",
                 modifier = Modifier.fillMaxWidth(),
             )
             Spacer(Modifier.height(12.dp))
@@ -128,6 +129,14 @@ fun RecurringFormScreen(
                     selectedId = form.cardId,
                     onSelected = viewModel::onCardChanged,
                     label = "Cartão",
+                )
+                Spacer(Modifier.height(12.dp))
+                OutlinedTextField(
+                    value = form.observation,
+                    onValueChange = viewModel::onObservationChanged,
+                    label = { Text("Observação (opcional)") },
+                    supportingText = { Text("${form.observation.length}/$OBSERVATION_MAX_LENGTH") },
+                    modifier = Modifier.fillMaxWidth(),
                 )
             }
 

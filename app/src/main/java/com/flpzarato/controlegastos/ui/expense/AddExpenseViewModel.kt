@@ -11,6 +11,8 @@ import com.flpzarato.controlegastos.data.repository.CardRepository
 import com.flpzarato.controlegastos.data.repository.CategoryRepository
 import com.flpzarato.controlegastos.data.repository.ExpenseRepository
 import com.flpzarato.controlegastos.domain.InstallmentCalculator
+import com.flpzarato.controlegastos.ui.common.bigDecimalToCentsString
+import com.flpzarato.controlegastos.ui.common.centsStringToBigDecimal
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -77,7 +79,7 @@ class AddExpenseViewModel @Inject constructor(
                 }
                 _form.value = AddExpenseFormState(
                     description = original.description,
-                    amount = (original.totalAmount ?: original.installmentAmount).toPlainString(),
+                    amount = bigDecimalToCentsString(original.totalAmount ?: original.installmentAmount),
                     observation = original.observation.orEmpty(),
                     categoryId = original.categoryId,
                     purchaseDate = original.purchaseDate,
@@ -92,12 +94,18 @@ class AddExpenseViewModel @Inject constructor(
     }
 
     fun onDescriptionChanged(value: String) = update { it.copy(description = value) }
-    fun onAmountChanged(value: String) = update { it.copy(amount = value) }
+    fun onAmountChanged(value: String) = update { it.copy(amount = value.filter(Char::isDigit).take(12)) }
     fun onObservationChanged(value: String) = update { it.copy(observation = value.take(OBSERVATION_MAX_LENGTH)) }
     fun onCategoryChanged(id: String) = update { it.copy(categoryId = id) }
     fun onDateChanged(date: LocalDate) = update { it.copy(purchaseDate = date) }
     fun onPaymentMethodChanged(method: PaymentMethod) = update {
-        it.copy(paymentMethod = method, cardId = if (method == PaymentMethod.CREDITO) it.cardId else null)
+        it.copy(
+            paymentMethod = method,
+            cardId = if (method == PaymentMethod.CREDITO) it.cardId else null,
+            // The field is only shown for Crédito, so clear it instead of silently saving a
+            // hidden leftover value if the person switches to another payment method.
+            observation = if (method == PaymentMethod.CREDITO) it.observation else "",
+        )
     }
     fun onCardChanged(id: String) = update { it.copy(cardId = id) }
     fun onInstallmentCountChanged(value: String) = update { it.copy(installmentCount = value.filter(Char::isDigit)) }
@@ -116,7 +124,7 @@ class AddExpenseViewModel @Inject constructor(
 
     private fun attemptSave(skipWarning: Boolean) {
         val current = _form.value
-        val amount = current.amount.replace(",", ".").toBigDecimalOrNull()
+        val amount = centsStringToBigDecimal(current.amount)
         val categoryId = current.categoryId
         val installmentCount = current.installmentCount.toIntOrNull()?.coerceAtLeast(1) ?: 1
         when {

@@ -148,6 +148,7 @@ class SheetsSyncRepository @Inject constructor(
                 loggedByEmail = signedInEmail,
                 cardId = template.cardId,
                 installmentCount = 1,
+                observation = template.observation,
                 recurringTemplateId = template.id,
             )
         }
@@ -212,7 +213,7 @@ class SheetsSyncRepository @Inject constructor(
                 spreadsheetId,
                 SheetSchema.TAB_RECORRENTES,
                 SheetSchema.RANGE_RECORRENTES,
-                "I",
+                "J",
                 rowNumberById[template.id],
                 template.toRow(),
             )
