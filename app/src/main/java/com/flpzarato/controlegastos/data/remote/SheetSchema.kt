@@ -11,13 +11,15 @@ object SheetSchema {
     const val TAB_CATEGORIAS = "Categorias"
     const val TAB_CARTOES = "Cartões"
     const val TAB_USUARIOS = "Usuários"
+    const val TAB_RECORRENTES = "Recorrentes"
 
-    // Column order matches ExpenseRowMapper.
-    const val RANGE_LANCAMENTOS = "$TAB_LANCAMENTOS!A2:L"
+    // Column order matches ExpenseRowMapper. Observacao/RecorrenteId were appended after
+    // the original 12 columns, so existing rows/sheets never need to be reordered.
+    const val RANGE_LANCAMENTOS = "$TAB_LANCAMENTOS!A2:N"
     val HEADER_LANCAMENTOS = listOf(
         "ID", "DataCompra", "Competencia", "Descricao", "CategoriaId",
         "ValorParcela", "ValorTotalOriginal", "Parcela", "FormaPagamento",
-        "CartaoId", "QuemLancou", "Deletado",
+        "CartaoId", "QuemLancou", "Deletado", "Observacao", "RecorrenteId",
     )
 
     const val RANGE_CATEGORIAS = "$TAB_CATEGORIAS!A2:C"
@@ -30,6 +32,11 @@ object SheetSchema {
 
     const val RANGE_USUARIOS = "$TAB_USUARIOS!A2:B"
     val HEADER_USUARIOS = listOf("Email", "Nome")
+
+    const val RANGE_RECORRENTES = "$TAB_RECORRENTES!A2:I"
+    val HEADER_RECORRENTES = listOf(
+        "ID", "Descricao", "Valor", "CategoriaId", "FormaPagamento", "CartaoId", "DiaDoMes", "Ativo", "Deletado",
+    )
 
     fun rowRange(tab: String, row: Int, lastColumn: String): String = "$tab!A$row:$lastColumn$row"
 }

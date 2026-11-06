@@ -3,6 +3,7 @@ package com.flpzarato.controlegastos.data.repository
 import com.flpzarato.controlegastos.data.local.dao.CardDao
 import com.flpzarato.controlegastos.data.local.dao.CategoryDao
 import com.flpzarato.controlegastos.data.local.dao.ExpenseDao
+import com.flpzarato.controlegastos.data.local.dao.RecurringExpenseDao
 import com.flpzarato.controlegastos.data.local.dao.UserDao
 import com.flpzarato.controlegastos.data.local.entity.CategoryEntity
 import com.flpzarato.controlegastos.data.prefs.UserPreferences
@@ -12,9 +13,12 @@ import com.flpzarato.controlegastos.data.remote.dto.ValueRange
 import com.flpzarato.controlegastos.data.remote.toCardEntity
 import com.flpzarato.controlegastos.data.remote.toCategoryEntity
 import com.flpzarato.controlegastos.data.remote.toExpenseEntity
+import com.flpzarato.controlegastos.data.remote.toRecurringExpenseEntity
 import com.flpzarato.controlegastos.data.remote.toRow
 import com.flpzarato.controlegastos.data.remote.toUserEntity
 import kotlinx.coroutines.flow.first
+import java.time.LocalDate
+import java.time.YearMonth
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -31,6 +35,8 @@ class SheetsSyncRepository @Inject constructor(
     private val categoryDao: CategoryDao,
     private val cardDao: CardDao,
     private val userDao: UserDao,
+    private val recurringExpenseDao: RecurringExpenseDao,
+    private val expenseRepository: ExpenseRepository,
     private val userPreferences: UserPreferences,
 ) {
     suspend fun sync(): Result<Unit> = runCatching {
@@ -44,24 +50,29 @@ class SheetsSyncRepository @Inject constructor(
                 SheetSchema.RANGE_CATEGORIAS,
                 SheetSchema.RANGE_CARTOES,
                 SheetSchema.RANGE_USUARIOS,
+                SheetSchema.RANGE_RECORRENTES,
             ),
         )
         val lancamentosRows = batch.valueRanges.getOrNull(0)?.values.orEmpty()
         val categoriasRows = batch.valueRanges.getOrNull(1)?.values.orEmpty()
         val cartoesRows = batch.valueRanges.getOrNull(2)?.values.orEmpty()
         val usuariosRows = batch.valueRanges.getOrNull(3)?.values.orEmpty()
+        val recorrentesRows = batch.valueRanges.getOrNull(4)?.values.orEmpty()
 
         pullExpenses(lancamentosRows)
         pullCategories(categoriasRows)
         pullCards(cartoesRows)
         pullUsers(usuariosRows)
+        pullRecurringExpenses(recorrentesRows)
 
         ensureCurrentUserRegistered(usuariosRows)
+        launchDueRecurringExpenses()
 
         pushDirtyExpenses(spreadsheetId, lancamentosRows)
         pushDirtyCategories(spreadsheetId, categoriasRows)
         pushDirtyCards(spreadsheetId, cartoesRows)
         pushDirtyUsers(spreadsheetId, usuariosRows)
+        pushDirtyRecurringExpenses(spreadsheetId, recorrentesRows)
 
         userPreferences.saveLastSync(System.currentTimeMillis())
     }
@@ -100,6 +111,46 @@ class SheetsSyncRepository @Inject constructor(
     private suspend fun pullUsers(rows: List<List<String>>) {
         val remote = rows.mapNotNull { it.toUserEntity() }
         if (remote.isNotEmpty()) userDao.upsertAll(remote)
+    }
+
+    private suspend fun pullRecurringExpenses(rows: List<List<String>>) {
+        val dirtyIds = recurringExpenseDao.getDirty().map { it.id }.toSet()
+        val remote = rows.mapNotNull { it.toRecurringExpenseEntity() }.filter { it.id !in dirtyIds }
+        if (remote.isNotEmpty()) recurringExpenseDao.upsertAll(remote)
+    }
+
+    /**
+     * For every active recurring template whose configured day has already passed this
+     * month, creates this month's expense if one hasn't been created yet (checked via
+     * [ExpenseDao.countByRecurringTemplateAndMonth]). Runs inside the same sync pass
+     * so the newly-dirty rows are picked up by [pushDirtyExpenses] right after, without
+     * scheduling a separate sync (which would cancel this one).
+     */
+    private suspend fun launchDueRecurringExpenses() {
+        val today = LocalDate.now()
+        val signedInEmail = userPreferences.signedInEmail.first() ?: return
+
+        for (template in recurringExpenseDao.getActiveTemplates()) {
+            val day = template.dayOfMonth.coerceIn(1, 28)
+            if (today.dayOfMonth < day) continue
+
+            val purchaseDate = today.withDayOfMonth(day)
+            val yearMonth = YearMonth.from(purchaseDate).toString()
+            val alreadyLaunched = expenseDao.countByRecurringTemplateAndMonth(template.id, yearMonth) > 0
+            if (alreadyLaunched) continue
+
+            expenseRepository.insertExpenseRows(
+                description = template.description,
+                totalAmount = template.amount,
+                categoryId = template.categoryId,
+                purchaseDate = purchaseDate,
+                paymentMethod = template.paymentMethod,
+                loggedByEmail = signedInEmail,
+                cardId = template.cardId,
+                installmentCount = 1,
+                recurringTemplateId = template.id,
+            )
+        }
     }
 
     /** The first time this account syncs, make sure it shows up in the shared "Usuários" tab. */
@@ -149,6 +200,23 @@ class SheetsSyncRepository @Inject constructor(
         for (user in dirty) {
             upsertRow(spreadsheetId, SheetSchema.TAB_USUARIOS, SheetSchema.RANGE_USUARIOS, "B", rowNumberByEmail[user.email], user.toRow())
             userDao.markSynced(user.email)
+        }
+    }
+
+    private suspend fun pushDirtyRecurringExpenses(spreadsheetId: String, existingRows: List<List<String>>) {
+        val dirty = recurringExpenseDao.getDirty()
+        if (dirty.isEmpty()) return
+        val rowNumberById = indexRowsById(existingRows)
+        for (template in dirty) {
+            upsertRow(
+                spreadsheetId,
+                SheetSchema.TAB_RECORRENTES,
+                SheetSchema.RANGE_RECORRENTES,
+                "I",
+                rowNumberById[template.id],
+                template.toRow(),
+            )
+            recurringExpenseDao.markSynced(template.id)
         }
     }
 

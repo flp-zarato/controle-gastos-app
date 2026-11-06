@@ -2,6 +2,7 @@ package com.flpzarato.controlegastos.ui.navigation
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Autorenew
 import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.List
@@ -26,8 +27,12 @@ import com.flpzarato.controlegastos.ui.cards.CardsScreen
 import com.flpzarato.controlegastos.ui.categories.CategoriesScreen
 import com.flpzarato.controlegastos.ui.expense.AddExpenseScreen
 import com.flpzarato.controlegastos.ui.home.HomeScreen
+import com.flpzarato.controlegastos.ui.invoice.InvoiceDetailScreen
+import com.flpzarato.controlegastos.ui.invoice.InvoiceListScreen
 import com.flpzarato.controlegastos.ui.listing.ExpenseListScreen
 import com.flpzarato.controlegastos.ui.login.LoginScreen
+import com.flpzarato.controlegastos.ui.recurring.RecurringFormScreen
+import com.flpzarato.controlegastos.ui.recurring.RecurringListScreen
 
 object Routes {
     const val LOGIN = "login"
@@ -37,8 +42,16 @@ object Routes {
     const val EDITAR_GASTO = "editar_gasto"
     const val CATEGORIAS = "categorias"
     const val CARTOES = "cartoes"
+    const val RECORRENTES = "recorrentes"
+    const val NOVO_RECORRENTE = "novo_recorrente"
+    const val EDITAR_RECORRENTE = "editar_recorrente"
+    const val FATURAS = "faturas"
+    const val FATURA_DETALHE = "fatura_detalhe"
 
     fun editarGastoRoute(groupId: String) = "$EDITAR_GASTO/$groupId"
+    fun editarRecorrenteRoute(id: String) = "$EDITAR_RECORRENTE/$id"
+    fun faturasRoute(cardId: String) = "$FATURAS/$cardId"
+    fun faturaDetalheRoute(cardId: String, competence: String) = "$FATURA_DETALHE/$cardId/$competence"
 }
 
 private data class BottomDestination(val route: String, val label: String, val icon: androidx.compose.ui.graphics.vector.ImageVector)
@@ -46,6 +59,7 @@ private data class BottomDestination(val route: String, val label: String, val i
 private val bottomDestinations = listOf(
     BottomDestination(Routes.INICIO, "Início", Icons.Filled.Home),
     BottomDestination(Routes.LANCAMENTOS, "Lançamentos", Icons.Filled.List),
+    BottomDestination(Routes.RECORRENTES, "Recorrentes", Icons.Filled.Autorenew),
     BottomDestination(Routes.CATEGORIAS, "Categorias", Icons.Filled.Category),
     BottomDestination(Routes.CARTOES, "Cartões", Icons.Filled.CreditCard),
 )
@@ -114,7 +128,51 @@ fun ControleGastosNavHost() {
                 )
             }
             composable(Routes.CATEGORIAS) { CategoriesScreen() }
-            composable(Routes.CARTOES) { CardsScreen() }
+            composable(Routes.CARTOES) {
+                CardsScreen(onOpenInvoices = { cardId -> navController.navigate(Routes.faturasRoute(cardId)) })
+            }
+            composable(Routes.RECORRENTES) {
+                RecurringListScreen(
+                    onAddRecurring = { navController.navigate(Routes.NOVO_RECORRENTE) },
+                    onEditRecurring = { id -> navController.navigate(Routes.editarRecorrenteRoute(id)) },
+                )
+            }
+            composable(Routes.NOVO_RECORRENTE) {
+                RecurringFormScreen(
+                    onSaved = { navController.popBackStack() },
+                    onBack = { navController.popBackStack() },
+                )
+            }
+            composable(
+                route = "${Routes.EDITAR_RECORRENTE}/{recurringId}",
+                arguments = listOf(navArgument("recurringId") { type = NavType.StringType }),
+            ) {
+                RecurringFormScreen(
+                    onSaved = { navController.popBackStack() },
+                    onBack = { navController.popBackStack() },
+                )
+            }
+            composable(
+                route = "${Routes.FATURAS}/{cardId}",
+                arguments = listOf(navArgument("cardId") { type = NavType.StringType }),
+            ) { backStackEntry ->
+                val cardId = backStackEntry.arguments?.getString("cardId").orEmpty()
+                InvoiceListScreen(
+                    onOpenInvoice = { competence ->
+                        navController.navigate(Routes.faturaDetalheRoute(cardId, competence))
+                    },
+                    onBack = { navController.popBackStack() },
+                )
+            }
+            composable(
+                route = "${Routes.FATURA_DETALHE}/{cardId}/{competence}",
+                arguments = listOf(
+                    navArgument("cardId") { type = NavType.StringType },
+                    navArgument("competence") { type = NavType.StringType },
+                ),
+            ) {
+                InvoiceDetailScreen(onBack = { navController.popBackStack() })
+            }
         }
     }
 }

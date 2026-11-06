@@ -40,7 +40,10 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.flpzarato.controlegastos.ui.common.ControleGastosTopBar
 
 @Composable
-fun CardsScreen(viewModel: CardsViewModel = hiltViewModel()) {
+fun CardsScreen(
+    onOpenInvoices: (cardId: String) -> Unit,
+    viewModel: CardsViewModel = hiltViewModel(),
+) {
     val cards by viewModel.cards.collectAsState()
     val knownUsers by viewModel.knownUsers.collectAsState()
     val form by viewModel.form.collectAsState()
@@ -115,7 +118,10 @@ fun CardsScreen(viewModel: CardsViewModel = hiltViewModel()) {
             }
 
             items(cards, key = { it.id }) { card ->
-                ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+                ElevatedCard(
+                    onClick = { onOpenInvoices(card.id) },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(12.dp),
                         verticalAlignment = Alignment.CenterVertically,

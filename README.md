@@ -39,15 +39,16 @@ não podem ser feitas por mim:
 
 ### 1. Criar a planilha compartilhada no Google Sheets
 
-Crie uma planilha nova e adicione 4 abas com exatamente estes nomes e cabeçalhos
+Crie uma planilha nova e adicione 5 abas com exatamente estes nomes e cabeçalhos
 na primeira linha (os dados começam na linha 2):
 
 | Aba | Colunas (linha 1) |
 |---|---|
-| `Lançamentos` | ID, DataCompra, Competencia, Descricao, CategoriaId, ValorParcela, ValorTotalOriginal, Parcela, FormaPagamento, CartaoId, QuemLancou, Deletado |
+| `Lançamentos` | ID, DataCompra, Competencia, Descricao, CategoriaId, ValorParcela, ValorTotalOriginal, Parcela, FormaPagamento, CartaoId, QuemLancou, Deletado, Observacao, RecorrenteId |
 | `Categorias` | ID, Nome, Deletado |
 | `Cartões` | ID, Apelido, TitularEmail, Banco, DiaFechamento, DiaVencimento, Deletado |
 | `Usuários` | Email, Nome |
+| `Recorrentes` | ID, Descricao, Valor, CategoriaId, FormaPagamento, CartaoId, DiaDoMes, Ativo, Deletado |
 
 Compartilhe essa planilha (botão "Compartilhar") com a conta Google da sua esposa,
 dando permissão de **Editor**.
@@ -96,9 +97,10 @@ instale manualmente (ative "Instalar de fontes desconhecidas" no Android).
 
 ## Fora de escopo (por enquanto)
 
-Por decisão consciente, a primeira versão não inclui: foto de comprovante, gastos
-recorrentes automáticos, orçamento/alertas por categoria, nem publicação na Play
-Store — tudo isso foi discutido e deixado de fora do MVP para manter o app simples.
+Por decisão consciente, a primeira versão não inclui: foto de comprovante,
+orçamento/alertas por categoria, marcar fatura como paga (isso continua só na
+planilha), nem publicação na Play Store — tudo isso foi discutido e deixado de
+fora do MVP para manter o app simples.
 
 ## Licença
 

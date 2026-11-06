@@ -4,6 +4,7 @@ import com.flpzarato.controlegastos.data.local.entity.CardEntity
 import com.flpzarato.controlegastos.data.local.entity.CategoryEntity
 import com.flpzarato.controlegastos.data.local.entity.ExpenseEntity
 import com.flpzarato.controlegastos.data.local.entity.PaymentMethod
+import com.flpzarato.controlegastos.data.local.entity.RecurringExpenseEntity
 import com.flpzarato.controlegastos.data.local.entity.UserEntity
 import java.math.BigDecimal
 import java.time.LocalDate
@@ -24,6 +25,8 @@ fun ExpenseEntity.toRow(): List<String> = listOf(
     cardId.orEmpty(),
     loggedByEmail,
     deleted.toString(),
+    observation.orEmpty(),
+    recurringTemplateId.orEmpty(),
 )
 
 fun List<String>.toExpenseEntity(): ExpenseEntity? {
@@ -46,6 +49,8 @@ fun List<String>.toExpenseEntity(): ExpenseEntity? {
         paymentMethod = cell(8)?.let { PaymentMethod.fromStorage(it) } ?: PaymentMethod.DINHEIRO,
         cardId = cell(9),
         loggedByEmail = cell(10) ?: return null,
+        observation = cell(12),
+        recurringTemplateId = cell(13),
         dirty = false,
         deleted = cell(11)?.toBoolean() ?: false,
     )
@@ -86,4 +91,25 @@ fun UserEntity.toRow(): List<String> = listOf(email, displayName)
 fun List<String>.toUserEntity(): UserEntity? {
     val email = cell(0) ?: return null
     return UserEntity(email = email, displayName = cell(1) ?: email, dirty = false)
+}
+
+fun RecurringExpenseEntity.toRow(): List<String> = listOf(
+    id, description, amount.toPlainString(), categoryId, paymentMethod.name,
+    cardId.orEmpty(), dayOfMonth.toString(), active.toString(), deleted.toString(),
+)
+
+fun List<String>.toRecurringExpenseEntity(): RecurringExpenseEntity? {
+    val id = cell(0) ?: return null
+    return RecurringExpenseEntity(
+        id = id,
+        description = cell(1) ?: return null,
+        amount = cell(2)?.let { BigDecimal(it) } ?: return null,
+        categoryId = cell(3) ?: return null,
+        paymentMethod = cell(4)?.let { PaymentMethod.fromStorage(it) } ?: PaymentMethod.DINHEIRO,
+        cardId = cell(5),
+        dayOfMonth = cell(6)?.toIntOrNull() ?: 1,
+        active = cell(7)?.toBoolean() ?: true,
+        dirty = false,
+        deleted = cell(8)?.toBoolean() ?: false,
+    )
 }

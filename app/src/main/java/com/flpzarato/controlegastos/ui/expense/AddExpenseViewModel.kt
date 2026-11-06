@@ -23,9 +23,12 @@ import java.math.BigDecimal
 import java.time.LocalDate
 import javax.inject.Inject
 
+const val OBSERVATION_MAX_LENGTH = 30
+
 data class AddExpenseFormState(
     val description: String = "",
     val amount: String = "",
+    val observation: String = "",
     val categoryId: String? = null,
     val purchaseDate: LocalDate = LocalDate.now(),
     val paymentMethod: PaymentMethod = PaymentMethod.DINHEIRO,
@@ -75,6 +78,7 @@ class AddExpenseViewModel @Inject constructor(
                 _form.value = AddExpenseFormState(
                     description = original.description,
                     amount = (original.totalAmount ?: original.installmentAmount).toPlainString(),
+                    observation = original.observation.orEmpty(),
                     categoryId = original.categoryId,
                     purchaseDate = original.purchaseDate,
                     paymentMethod = original.paymentMethod,
@@ -89,6 +93,7 @@ class AddExpenseViewModel @Inject constructor(
 
     fun onDescriptionChanged(value: String) = update { it.copy(description = value) }
     fun onAmountChanged(value: String) = update { it.copy(amount = value) }
+    fun onObservationChanged(value: String) = update { it.copy(observation = value.take(OBSERVATION_MAX_LENGTH)) }
     fun onCategoryChanged(id: String) = update { it.copy(categoryId = id) }
     fun onDateChanged(date: LocalDate) = update { it.copy(purchaseDate = date) }
     fun onPaymentMethodChanged(method: PaymentMethod) = update {
@@ -147,6 +152,7 @@ class AddExpenseViewModel @Inject constructor(
                     val email = current.originalLoggedByEmail
                         ?: requireNotNull(userPreferences.signedInEmail.first()) { "Usuário não autenticado" }
                     val groupId = editingGroupId
+                    val observation = current.observation.trim().takeIf { it.isNotEmpty() }
                     if (groupId != null) {
                         expenseRepository.updateExpense(
                             oldGroupId = groupId,
@@ -158,6 +164,7 @@ class AddExpenseViewModel @Inject constructor(
                             loggedByEmail = email,
                             cardId = current.cardId,
                             installmentCount = installmentCount,
+                            observation = observation,
                         )
                     } else {
                         expenseRepository.addExpense(
@@ -169,6 +176,7 @@ class AddExpenseViewModel @Inject constructor(
                             loggedByEmail = email,
                             cardId = current.cardId,
                             installmentCount = installmentCount,
+                            observation = observation,
                         )
                     }
                 }.onSuccess {

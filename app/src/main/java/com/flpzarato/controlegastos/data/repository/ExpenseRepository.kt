@@ -36,6 +36,8 @@ class ExpenseRepository @Inject constructor(
     suspend fun getGroup(installmentGroupId: String): List<ExpenseEntity> =
         expenseDao.getByGroup(installmentGroupId)
 
+    fun observeByCard(cardId: String): Flow<List<ExpenseEntity>> = expenseDao.observeByCard(cardId)
+
     suspend fun addExpense(
         description: String,
         totalAmount: BigDecimal,
@@ -45,6 +47,40 @@ class ExpenseRepository @Inject constructor(
         loggedByEmail: String,
         cardId: String?,
         installmentCount: Int,
+        observation: String? = null,
+        recurringTemplateId: String? = null,
+    ) {
+        insertExpenseRows(
+            description = description,
+            totalAmount = totalAmount,
+            categoryId = categoryId,
+            purchaseDate = purchaseDate,
+            paymentMethod = paymentMethod,
+            loggedByEmail = loggedByEmail,
+            cardId = cardId,
+            installmentCount = installmentCount,
+            observation = observation,
+            recurringTemplateId = recurringTemplateId,
+        )
+        syncScheduler.requestImmediateSync()
+    }
+
+    /**
+     * Same insertion as [addExpense] but without scheduling a sync — used only by the sync
+     * job itself when auto-launching a due recurring expense, where triggering another sync
+     * mid-sync would cancel the one currently running (WorkManager's unique-work replace policy).
+     */
+    suspend fun insertExpenseRows(
+        description: String,
+        totalAmount: BigDecimal,
+        categoryId: String,
+        purchaseDate: LocalDate,
+        paymentMethod: PaymentMethod,
+        loggedByEmail: String,
+        cardId: String?,
+        installmentCount: Int,
+        observation: String? = null,
+        recurringTemplateId: String? = null,
     ) {
         val groupId = UUID.randomUUID().toString()
 
@@ -72,6 +108,8 @@ class ExpenseRepository @Inject constructor(
                         paymentMethod = paymentMethod,
                         cardId = cardId,
                         loggedByEmail = loggedByEmail,
+                        observation = observation,
+                        recurringTemplateId = recurringTemplateId,
                         dirty = true,
                     ),
                 )
@@ -91,12 +129,12 @@ class ExpenseRepository @Inject constructor(
                     paymentMethod = paymentMethod,
                     cardId = null,
                     loggedByEmail = loggedByEmail,
+                    observation = observation,
+                    recurringTemplateId = recurringTemplateId,
                     dirty = true,
                 ),
             )
         }
-
-        syncScheduler.requestImmediateSync()
     }
 
     /** Deletes every installment of a purchase together, as agreed in Q25. */
@@ -120,6 +158,7 @@ class ExpenseRepository @Inject constructor(
         loggedByEmail: String,
         cardId: String?,
         installmentCount: Int,
+        observation: String? = null,
     ) {
         expenseDao.markGroupDeleted(oldGroupId)
         addExpense(
@@ -131,6 +170,7 @@ class ExpenseRepository @Inject constructor(
             loggedByEmail = loggedByEmail,
             cardId = cardId,
             installmentCount = installmentCount,
+            observation = observation,
         )
     }
 }

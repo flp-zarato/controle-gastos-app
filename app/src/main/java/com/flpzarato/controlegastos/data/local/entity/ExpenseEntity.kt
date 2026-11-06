@@ -29,6 +29,10 @@ data class ExpenseEntity(
     val paymentMethod: PaymentMethod,
     val cardId: String?,
     val loggedByEmail: String,
+    /** Free-text note, capped at 30 chars by the UI. */
+    val observation: String? = null,
+    /** Set only on expenses auto-generated from a recurring template; used to avoid relaunching the same month twice. */
+    val recurringTemplateId: String? = null,
     val dirty: Boolean = false,
     val deleted: Boolean = false,
 )

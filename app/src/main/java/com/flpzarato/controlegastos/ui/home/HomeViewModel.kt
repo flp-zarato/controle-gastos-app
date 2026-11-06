@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.flpzarato.controlegastos.data.local.dao.CategoryDao
 import com.flpzarato.controlegastos.data.local.dao.UserDao
 import com.flpzarato.controlegastos.data.repository.ExpenseRepository
+import com.flpzarato.controlegastos.ui.common.formatCompetenceLabel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -12,8 +13,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import java.math.BigDecimal
 import java.time.YearMonth
-import java.time.format.TextStyle
-import java.util.Locale
 import javax.inject.Inject
 
 data class CategoryBreakdown(val categoryId: String, val categoryName: String, val total: BigDecimal)
@@ -70,8 +69,4 @@ class HomeViewModel @Inject constructor(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUiState())
 }
 
-private fun currentMonthLabel(): String {
-    val now = YearMonth.now()
-    val monthName = now.month.getDisplayName(TextStyle.FULL, Locale("pt", "BR"))
-    return "${monthName.replaceFirstChar { it.uppercase() }}/${now.year}"
-}
+private fun currentMonthLabel(): String = formatCompetenceLabel(YearMonth.now().toString())

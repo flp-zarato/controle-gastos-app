@@ -46,13 +46,11 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.flpzarato.controlegastos.data.local.entity.PaymentMethod
 import com.flpzarato.controlegastos.ui.common.ControleGastosTopBar
+import com.flpzarato.controlegastos.ui.common.formatCompetenceLabel
 import java.time.Instant
 import java.time.LocalDate
-import java.time.YearMonth
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
-import java.time.format.TextStyle
-import java.util.Locale
 
 @Composable
 fun AddExpenseScreen(
@@ -109,6 +107,15 @@ fun AddExpenseScreen(
             Spacer(Modifier.height(12.dp))
 
             PurchaseDateField(date = form.purchaseDate, onDateSelected = viewModel::onDateChanged)
+            Spacer(Modifier.height(12.dp))
+
+            OutlinedTextField(
+                value = form.observation,
+                onValueChange = viewModel::onObservationChanged,
+                label = { Text("Observação (opcional)") },
+                supportingText = { Text("${form.observation.length}/$OBSERVATION_MAX_LENGTH") },
+                modifier = Modifier.fillMaxWidth(),
+            )
             Spacer(Modifier.height(12.dp))
 
             CategoryDropdown(
@@ -230,12 +237,6 @@ private fun PurchaseDateField(date: LocalDate, onDateSelected: (LocalDate) -> Un
             DatePicker(state = state)
         }
     }
-}
-
-private fun formatCompetenceLabel(yyyyMM: String): String {
-    val yearMonth = YearMonth.parse(yyyyMM)
-    val monthName = yearMonth.month.getDisplayName(TextStyle.FULL, Locale("pt", "BR"))
-    return "${monthName.replaceFirstChar { it.uppercase() }}/${yearMonth.year}"
 }
 
 private fun PaymentMethod.label(): String = when (this) {
