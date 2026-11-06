@@ -123,7 +123,7 @@ class RecurringFormViewModel @Inject constructor(
                         observation = current.observation.trim().takeIf { it.isNotEmpty() },
                     )
                 }.onSuccess {
-                    _form.value = RecurringFormState(saved = true)
+                    update { it.copy(isSaving = false, saved = true) }
                 }.onFailure { e ->
                     update { it.copy(isSaving = false, error = e.message ?: "Erro ao salvar") }
                 }

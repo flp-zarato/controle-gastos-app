@@ -122,9 +122,9 @@ class SheetsSyncRepository @Inject constructor(
     /**
      * For every active recurring template whose configured day has already passed this
      * month, creates this month's expense if one hasn't been created yet (checked via
-     * [ExpenseDao.countByRecurringTemplateAndMonth]). Runs inside the same sync pass
-     * so the newly-dirty rows are picked up by [pushDirtyExpenses] right after, without
-     * scheduling a separate sync (which would cancel this one).
+     * [ExpenseDao.getByRecurringTemplateAndMonth]). Runs inside the same sync pass so the
+     * newly-dirty rows are picked up by [pushDirtyExpenses] right after, without scheduling
+     * a separate sync (which would cancel this one).
      */
     private suspend fun launchDueRecurringExpenses() {
         val today = LocalDate.now()
@@ -136,7 +136,7 @@ class SheetsSyncRepository @Inject constructor(
 
             val purchaseDate = today.withDayOfMonth(day)
             val yearMonth = YearMonth.from(purchaseDate).toString()
-            val alreadyLaunched = expenseDao.countByRecurringTemplateAndMonth(template.id, yearMonth) > 0
+            val alreadyLaunched = expenseDao.getByRecurringTemplateAndMonth(template.id, yearMonth).isNotEmpty()
             if (alreadyLaunched) continue
 
             expenseRepository.insertExpenseRows(

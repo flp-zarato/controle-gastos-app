@@ -1,11 +1,13 @@
 package com.flpzarato.controlegastos.data.repository
 
+import com.flpzarato.controlegastos.data.local.dao.ExpenseDao
 import com.flpzarato.controlegastos.data.local.dao.RecurringExpenseDao
 import com.flpzarato.controlegastos.data.local.entity.PaymentMethod
 import com.flpzarato.controlegastos.data.local.entity.RecurringExpenseEntity
 import com.flpzarato.controlegastos.sync.SyncScheduler
 import kotlinx.coroutines.flow.Flow
 import java.math.BigDecimal
+import java.time.YearMonth
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -13,13 +15,21 @@ import javax.inject.Singleton
 @Singleton
 class RecurringExpenseRepository @Inject constructor(
     private val recurringExpenseDao: RecurringExpenseDao,
+    private val expenseDao: ExpenseDao,
     private val syncScheduler: SyncScheduler,
 ) {
     fun observeAll(): Flow<List<RecurringExpenseEntity>> = recurringExpenseDao.observeAll()
 
     suspend fun getById(id: String): RecurringExpenseEntity? = recurringExpenseDao.getById(id)
 
-    /** [id] null creates a new template; non-null edits it in place, preserving its paused/active state. */
+    /**
+     * [id] null creates a new template; non-null edits it in place, preserving its
+     * paused/active state. Editing also deletes this month's already-launched expense (if
+     * any) so the next sync regenerates it from the corrected template — otherwise a fix
+     * made here (e.g. wrong payment method or card) would never reach a lançamento that
+     * already exists for the current month, since relaunching is normally skipped once one
+     * exists.
+     */
     suspend fun save(
         id: String?,
         description: String,
@@ -46,6 +56,12 @@ class RecurringExpenseRepository @Inject constructor(
                 dirty = true,
             ),
         )
+        if (id != null) {
+            val currentMonth = YearMonth.now().toString()
+            expenseDao.getByRecurringTemplateAndMonth(id, currentMonth).forEach {
+                expenseDao.markGroupDeleted(it.installmentGroupId)
+            }
+        }
         syncScheduler.requestImmediateSync()
     }
 

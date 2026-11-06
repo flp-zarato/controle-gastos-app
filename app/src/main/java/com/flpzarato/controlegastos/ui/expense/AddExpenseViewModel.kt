@@ -188,7 +188,7 @@ class AddExpenseViewModel @Inject constructor(
                         )
                     }
                 }.onSuccess {
-                    _form.value = AddExpenseFormState(saved = true)
+                    update { it.copy(isSaving = false, saved = true) }
                 }.onFailure { e ->
                     update { it.copy(isSaving = false, error = e.message ?: "Erro ao salvar") }
                 }
