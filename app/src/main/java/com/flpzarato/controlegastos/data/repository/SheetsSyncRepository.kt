@@ -10,6 +10,7 @@ import com.flpzarato.controlegastos.data.local.entity.PaymentMethod
 import com.flpzarato.controlegastos.data.prefs.UserPreferences
 import com.flpzarato.controlegastos.data.remote.SheetSchema
 import com.flpzarato.controlegastos.data.remote.SheetsApi
+import com.flpzarato.controlegastos.data.remote.dto.BatchUpdateValuesRequest
 import com.flpzarato.controlegastos.data.remote.dto.ValueRange
 import com.flpzarato.controlegastos.data.remote.toCardEntity
 import com.flpzarato.controlegastos.data.remote.toCategoryEntity
@@ -191,86 +192,102 @@ class SheetsSyncRepository @Inject constructor(
     }
 
     private suspend fun pushDirtyExpenses(spreadsheetId: String, existingRows: List<List<String>>) {
-        val dirty = expenseDao.getDirty()
-        if (dirty.isEmpty()) return
-        val rowNumberById = indexRowsById(existingRows)
-        for (expense in dirty) {
-            upsertRow(spreadsheetId, SheetSchema.TAB_LANCAMENTOS, SheetSchema.RANGE_LANCAMENTOS, "L", rowNumberById[expense.id], expense.toRow())
-            expenseDao.markSynced(expense.id)
-        }
+        pushDirtyBatch(
+            spreadsheetId, SheetSchema.TAB_LANCAMENTOS, SheetSchema.RANGE_LANCAMENTOS, "L", existingRows,
+            dirty = expenseDao.getDirty(),
+            keyOf = { it.id },
+            toRow = { it.toRow() },
+            markSynced = { expenseDao.markSynced(it.id) },
+        )
     }
 
     private suspend fun pushDirtyCategories(spreadsheetId: String, existingRows: List<List<String>>) {
-        val dirty = categoryDao.getDirty()
-        if (dirty.isEmpty()) return
-        val rowNumberById = indexRowsById(existingRows)
-        for (category in dirty) {
-            upsertRow(spreadsheetId, SheetSchema.TAB_CATEGORIAS, SheetSchema.RANGE_CATEGORIAS, "C", rowNumberById[category.id], category.toRow())
-            categoryDao.markSynced(category.id)
-        }
+        pushDirtyBatch(
+            spreadsheetId, SheetSchema.TAB_CATEGORIAS, SheetSchema.RANGE_CATEGORIAS, "C", existingRows,
+            dirty = categoryDao.getDirty(),
+            keyOf = { it.id },
+            toRow = { it.toRow() },
+            markSynced = { categoryDao.markSynced(it.id) },
+        )
     }
 
     private suspend fun pushDirtyCards(spreadsheetId: String, existingRows: List<List<String>>) {
-        val dirty = cardDao.getDirty()
-        if (dirty.isEmpty()) return
-        val rowNumberById = indexRowsById(existingRows)
-        for (card in dirty) {
-            upsertRow(spreadsheetId, SheetSchema.TAB_CARTOES, SheetSchema.RANGE_CARTOES, "G", rowNumberById[card.id], card.toRow())
-            cardDao.markSynced(card.id)
-        }
+        pushDirtyBatch(
+            spreadsheetId, SheetSchema.TAB_CARTOES, SheetSchema.RANGE_CARTOES, "G", existingRows,
+            dirty = cardDao.getDirty(),
+            keyOf = { it.id },
+            toRow = { it.toRow() },
+            markSynced = { cardDao.markSynced(it.id) },
+        )
     }
 
     private suspend fun pushDirtyUsers(spreadsheetId: String, existingRows: List<List<String>>) {
-        val dirty = userDao.getDirty()
-        if (dirty.isEmpty()) return
-        val rowNumberByEmail = indexRowsById(existingRows)
-        for (user in dirty) {
-            upsertRow(spreadsheetId, SheetSchema.TAB_USUARIOS, SheetSchema.RANGE_USUARIOS, "B", rowNumberByEmail[user.email], user.toRow())
-            userDao.markSynced(user.email)
-        }
+        pushDirtyBatch(
+            spreadsheetId, SheetSchema.TAB_USUARIOS, SheetSchema.RANGE_USUARIOS, "B", existingRows,
+            dirty = userDao.getDirty(),
+            keyOf = { it.email },
+            toRow = { it.toRow() },
+            markSynced = { userDao.markSynced(it.email) },
+        )
     }
 
     private suspend fun pushDirtyRecurringExpenses(spreadsheetId: String, existingRows: List<List<String>>) {
-        val dirty = recurringExpenseDao.getDirty()
-        if (dirty.isEmpty()) return
-        val rowNumberById = indexRowsById(existingRows)
-        for (template in dirty) {
-            upsertRow(
-                spreadsheetId,
-                SheetSchema.TAB_RECORRENTES,
-                SheetSchema.RANGE_RECORRENTES,
-                "K",
-                rowNumberById[template.id],
-                template.toRow(),
-            )
-            recurringExpenseDao.markSynced(template.id)
-        }
+        pushDirtyBatch(
+            spreadsheetId, SheetSchema.TAB_RECORRENTES, SheetSchema.RANGE_RECORRENTES, "K", existingRows,
+            dirty = recurringExpenseDao.getDirty(),
+            keyOf = { it.id },
+            toRow = { it.toRow() },
+            markSynced = { recurringExpenseDao.markSynced(it.id) },
+        )
     }
 
     /** Maps the value in column A (the record's id/email) to its 1-based sheet row number. Data starts at row 2. */
     private fun indexRowsById(rows: List<List<String>>): Map<String, Int> =
         rows.mapIndexedNotNull { index, row -> row.getOrNull(0)?.let { it to (index + 2) } }.toMap()
 
-    private suspend fun upsertRow(
+    /**
+     * Pushes every dirty record for one tab in as few HTTP calls as possible: every record
+     * that already has a row in the sheet is folded into a single `values:batchUpdate` call
+     * (one HTTP request for the whole tab, no matter how many rows changed); records with no
+     * existing row yet (new since the last pull) are appended together in a single
+     * `values:append` call, since that endpoint already accepts multiple rows per request.
+     * Each record is marked synced only once its corresponding call has actually succeeded.
+     */
+    private suspend fun <T> pushDirtyBatch(
         spreadsheetId: String,
         tab: String,
         appendRange: String,
         lastColumn: String,
-        existingRowNumber: Int?,
-        row: List<String>,
+        existingRows: List<List<String>>,
+        dirty: List<T>,
+        keyOf: (T) -> String,
+        toRow: (T) -> List<String>,
+        markSynced: suspend (T) -> Unit,
     ) {
-        if (existingRowNumber != null) {
-            sheetsApi.update(
-                spreadsheetId = spreadsheetId,
-                range = SheetSchema.rowRange(tab, existingRowNumber, lastColumn),
-                body = ValueRange(values = listOf(row)),
-            )
-        } else {
-            sheetsApi.append(
-                spreadsheetId = spreadsheetId,
-                range = appendRange,
-                body = ValueRange(values = listOf(row)),
-            )
+        if (dirty.isEmpty()) return
+        val rowNumberById = indexRowsById(existingRows)
+
+        val updates = mutableListOf<T>()
+        val updateRanges = mutableListOf<ValueRange>()
+        val appends = mutableListOf<T>()
+        for (item in dirty) {
+            val rowNumber = rowNumberById[keyOf(item)]
+            if (rowNumber != null) {
+                updates += item
+                updateRanges += ValueRange(range = SheetSchema.rowRange(tab, rowNumber, lastColumn), values = listOf(toRow(item)))
+            } else {
+                appends += item
+            }
+        }
+
+        if (updateRanges.isNotEmpty()) {
+            sheetsApi.batchUpdate(spreadsheetId, BatchUpdateValuesRequest(data = updateRanges))
+            updates.forEach { markSynced(it) }
+        }
+
+        if (appends.isNotEmpty()) {
+            sheetsApi.append(spreadsheetId = spreadsheetId, range = appendRange, body = ValueRange(values = appends.map(toRow)))
+            appends.forEach { markSynced(it) }
         }
     }
 }

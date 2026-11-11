@@ -2,6 +2,8 @@ package com.flpzarato.controlegastos.data.remote
 
 import com.flpzarato.controlegastos.data.remote.dto.AppendValuesResponse
 import com.flpzarato.controlegastos.data.remote.dto.BatchGetValuesResponse
+import com.flpzarato.controlegastos.data.remote.dto.BatchUpdateValuesRequest
+import com.flpzarato.controlegastos.data.remote.dto.BatchUpdateValuesResponse
 import com.flpzarato.controlegastos.data.remote.dto.ValueRange
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -26,6 +28,13 @@ interface SheetsApi {
         @Query("valueInputOption") valueInputOption: String = "RAW",
         @Body body: ValueRange,
     ): ValueRange
+
+    /** Updates several disjoint ranges in one request — used to push many dirty rows per sync instead of one call each. */
+    @POST("v4/spreadsheets/{spreadsheetId}/values:batchUpdate")
+    suspend fun batchUpdate(
+        @Path("spreadsheetId") spreadsheetId: String,
+        @Body body: BatchUpdateValuesRequest,
+    ): BatchUpdateValuesResponse
 
     @POST("v4/spreadsheets/{spreadsheetId}/values/{range}:append")
     suspend fun append(

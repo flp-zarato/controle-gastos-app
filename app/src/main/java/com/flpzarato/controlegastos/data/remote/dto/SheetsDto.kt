@@ -27,3 +27,19 @@ data class AppendValuesResponse(
     val tableRange: String? = null,
     val updates: UpdateValuesResponse? = null,
 )
+
+@Serializable
+data class BatchUpdateValuesRequest(
+    val valueInputOption: String = "RAW",
+    val data: List<ValueRange>,
+)
+
+@Serializable
+data class BatchUpdateValuesResponse(
+    val spreadsheetId: String? = null,
+    val totalUpdatedRows: Int? = null,
+    val totalUpdatedColumns: Int? = null,
+    val totalUpdatedCells: Int? = null,
+    val totalUpdatedSheets: Int? = null,
+    val responses: List<UpdateValuesResponse> = emptyList(),
+)
