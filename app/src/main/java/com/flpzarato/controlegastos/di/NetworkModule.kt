@@ -1,5 +1,6 @@
 package com.flpzarato.controlegastos.di
 
+import com.flpzarato.controlegastos.BuildConfig
 import com.flpzarato.controlegastos.data.remote.SheetsApi
 import com.flpzarato.controlegastos.data.remote.auth.AuthInterceptor
 import dagger.Module
@@ -25,7 +26,11 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideOkHttpClient(authInterceptor: AuthInterceptor): OkHttpClient {
-        val logging = HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BASIC }
+        // BODY logs full request/response payloads (the shared spreadsheet's data) — only
+        // acceptable in debug builds; release stays at BASIC to avoid leaking it to logcat.
+        val logging = HttpLoggingInterceptor().apply {
+            level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BODY else HttpLoggingInterceptor.Level.BASIC
+        }
         return OkHttpClient.Builder()
             .addInterceptor(authInterceptor)
             .addInterceptor(logging)
