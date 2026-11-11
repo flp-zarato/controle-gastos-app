@@ -30,6 +30,23 @@ class CardRepository @Inject constructor(
         syncScheduler.requestImmediateSync()
     }
 
+    suspend fun updateCard(id: String, nickname: String, holderEmail: String, bank: String, closingDay: Int, dueDay: Int) {
+        require(closingDay in 1..28) { "Dia de fechamento deve estar entre 1 e 28" }
+        require(dueDay in 1..28) { "Dia de vencimento deve estar entre 1 e 28" }
+        cardDao.upsert(
+            CardEntity(
+                id = id,
+                nickname = nickname,
+                holderEmail = holderEmail,
+                bank = bank,
+                closingDay = closingDay,
+                dueDay = dueDay,
+                dirty = true,
+            ),
+        )
+        syncScheduler.requestImmediateSync()
+    }
+
     suspend fun removeCard(id: String) {
         cardDao.markDeleted(id)
         syncScheduler.requestImmediateSync()

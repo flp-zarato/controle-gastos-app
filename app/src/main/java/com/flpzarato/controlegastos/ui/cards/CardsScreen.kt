@@ -15,6 +15,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ElevatedCard
@@ -26,6 +27,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -60,7 +62,10 @@ fun CardsScreen(
         ) {
             item {
                 Column {
-                    Text("Novo cartão", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        if (form.editingCardId != null) "Editar cartão" else "Novo cartão",
+                        style = MaterialTheme.typography.titleMedium,
+                    )
                     Spacer(Modifier.height(8.dp))
                     OutlinedTextField(
                         value = form.nickname,
@@ -109,7 +114,12 @@ fun CardsScreen(
 
                     Spacer(Modifier.height(16.dp))
                     Button(onClick = viewModel::save, modifier = Modifier.fillMaxWidth()) {
-                        Text("Salvar cartão")
+                        Text(if (form.editingCardId != null) "Salvar alterações" else "Salvar cartão")
+                    }
+                    if (form.editingCardId != null) {
+                        TextButton(onClick = viewModel::cancelEditing, modifier = Modifier.fillMaxWidth()) {
+                            Text("Cancelar edição")
+                        }
                     }
 
                     Spacer(Modifier.height(24.dp))
@@ -138,6 +148,9 @@ fun CardsScreen(
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
+                        }
+                        IconButton(onClick = { viewModel.startEditing(card) }) {
+                            Icon(Icons.Filled.Edit, contentDescription = "Editar")
                         }
                         IconButton(onClick = { viewModel.removeCard(card.id) }) {
                             Icon(Icons.Filled.Delete, contentDescription = "Remover")

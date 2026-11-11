@@ -21,6 +21,7 @@ data class NewCardFormState(
     val bank: String = "",
     val closingDay: String = "",
     val dueDay: String = "",
+    val editingCardId: String? = null,
     val error: String? = null,
 )
 
@@ -49,6 +50,21 @@ class CardsViewModel @Inject constructor(
         _form.value = transform(_form.value)
     }
 
+    fun startEditing(card: CardEntity) {
+        _form.value = NewCardFormState(
+            nickname = card.nickname,
+            holderEmail = card.holderEmail,
+            bank = card.bank,
+            closingDay = card.closingDay.toString(),
+            dueDay = card.dueDay.toString(),
+            editingCardId = card.id,
+        )
+    }
+
+    fun cancelEditing() {
+        _form.value = NewCardFormState()
+    }
+
     fun save() {
         val current = _form.value
         val closing = current.closingDay.toIntOrNull()
@@ -61,7 +77,14 @@ class CardsViewModel @Inject constructor(
             due == null || due !in 1..28 -> update { it.copy(error = "Dia de vencimento inválido (1-28)") }
             else -> viewModelScope.launch {
                 runCatching {
-                    cardRepository.addCard(current.nickname.trim(), current.holderEmail, current.bank.trim(), closing, due)
+                    val editingId = current.editingCardId
+                    if (editingId != null) {
+                        cardRepository.updateCard(
+                            editingId, current.nickname.trim(), current.holderEmail, current.bank.trim(), closing, due,
+                        )
+                    } else {
+                        cardRepository.addCard(current.nickname.trim(), current.holderEmail, current.bank.trim(), closing, due)
+                    }
                 }.onSuccess {
                     _form.value = NewCardFormState()
                 }.onFailure { e ->
