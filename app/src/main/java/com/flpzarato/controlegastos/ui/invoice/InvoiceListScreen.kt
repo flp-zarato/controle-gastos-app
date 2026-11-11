@@ -1,7 +1,6 @@
 package com.flpzarato.controlegastos.ui.invoice
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -10,6 +9,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.List
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -23,7 +24,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.flpzarato.controlegastos.ui.common.CenteredLoadingIndicator
 import com.flpzarato.controlegastos.ui.common.ControleGastosTopBar
+import com.flpzarato.controlegastos.ui.common.EmptyState
 import com.flpzarato.controlegastos.ui.common.formatCompetenceLabel
 import java.text.NumberFormat
 import java.util.Locale
@@ -40,12 +43,14 @@ fun InvoiceListScreen(
     Scaffold(
         topBar = { ControleGastosTopBar(title = "Faturas · ${state.cardNickname}", onBack = onBack) },
     ) { padding ->
-        if (state.invoices.isEmpty()) {
-            Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                Text("Nenhum lançamento neste cartão ainda", style = MaterialTheme.typography.bodyMedium)
-            }
-        } else {
-            LazyColumn(
+        when {
+            state.isLoading -> CenteredLoadingIndicator(modifier = Modifier.padding(padding))
+            state.invoices.isEmpty() -> EmptyState(
+                icon = Icons.Filled.List,
+                message = "Nenhum lançamento neste cartão ainda",
+                modifier = Modifier.padding(padding),
+            )
+            else -> LazyColumn(
                 modifier = Modifier.fillMaxSize().padding(padding),
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),

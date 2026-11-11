@@ -19,6 +19,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.List
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.FloatingActionButton
@@ -42,7 +43,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.flpzarato.controlegastos.ui.common.CenteredLoadingIndicator
 import com.flpzarato.controlegastos.ui.common.ControleGastosTopBar
+import com.flpzarato.controlegastos.ui.common.EmptyState
 import com.flpzarato.controlegastos.ui.common.categoryColor
 import com.flpzarato.controlegastos.ui.common.categoryIcon
 import java.text.NumberFormat
@@ -91,76 +94,78 @@ fun ExpenseListScreen(
                 )
             }
 
-            if (state.expenses.isEmpty()) {
-                Text(
-                    "Nenhum lançamento neste período",
-                    modifier = Modifier.padding(16.dp),
-                    style = MaterialTheme.typography.bodyMedium,
+            when {
+                state.isLoading -> CenteredLoadingIndicator()
+                state.expenses.isEmpty() -> EmptyState(
+                    icon = Icons.Filled.List,
+                    message = "Nenhum lançamento neste período",
                 )
-            }
+                else -> LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    items(state.expenses, key = { it.id }) { expense ->
+                        val parcelaLabel = if (expense.installmentCount > 1) {
+                            " · ${expense.installmentNumber}/${expense.installmentCount}"
+                        } else {
+                            ""
+                        }
+                        val color = categoryColor(expense.categoryId)
 
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                items(state.expenses, key = { it.id }) { expense ->
-                    val parcelaLabel = if (expense.installmentCount > 1) {
-                        " · ${expense.installmentNumber}/${expense.installmentCount}"
-                    } else {
-                        ""
-                    }
-                    val color = categoryColor(expense.categoryId)
-
-                    ElevatedCard(modifier = Modifier.fillMaxWidth()) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(40.dp)
-                                    .clip(CircleShape)
-                                    .background(color.copy(alpha = 0.15f)),
-                                contentAlignment = Alignment.Center,
+                        ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                Icon(
-                                    categoryIcon(state.categoryNames[expense.categoryId].orEmpty()),
-                                    contentDescription = null,
-                                    tint = color,
-                                )
-                            }
-                            Spacer(Modifier.width(12.dp))
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(expense.description + parcelaLabel, style = MaterialTheme.typography.bodyLarge)
-                                Text(
-                                    "${expense.purchaseDate.format(dateFormatter)} · " +
-                                        "${state.categoryNames[expense.categoryId] ?: "—"} · " +
-                                        (state.userNames[expense.loggedByEmail] ?: expense.loggedByEmail),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                                if (!expense.observation.isNullOrBlank()) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(40.dp)
+                                        .clip(CircleShape)
+                                        .background(color.copy(alpha = 0.15f)),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Icon(
+                                        categoryIcon(state.categoryNames[expense.categoryId].orEmpty()),
+                                        contentDescription = null,
+                                        tint = color,
+                                    )
+                                }
+                                Spacer(Modifier.width(12.dp))
+                                Column(modifier = Modifier.weight(1f)) {
                                     Text(
-                                        expense.observation,
+                                        expense.description + parcelaLabel,
+                                        style = MaterialTheme.typography.bodyLarge,
+                                    )
+                                    Text(
+                                        "${expense.purchaseDate.format(dateFormatter)} · " +
+                                            "${state.categoryNames[expense.categoryId] ?: "—"} · " +
+                                            (state.userNames[expense.loggedByEmail] ?: expense.loggedByEmail),
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
-                                }
-                            }
-                            Spacer(Modifier.width(8.dp))
-                            Column(horizontalAlignment = Alignment.End) {
-                                Text(
-                                    currencyFormat.format(expense.installmentAmount),
-                                    style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = FontWeight.Bold,
-                                )
-                                Row {
-                                    IconButton(onClick = { onEditExpense(expense.installmentGroupId) }) {
-                                        Icon(Icons.Filled.Edit, contentDescription = "Editar")
+                                    if (!expense.observation.isNullOrBlank()) {
+                                        Text(
+                                            expense.observation,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
                                     }
-                                    IconButton(onClick = { pendingDeleteGroupId = expense.installmentGroupId }) {
-                                        Icon(Icons.Filled.Delete, contentDescription = "Excluir")
+                                }
+                                Spacer(Modifier.width(8.dp))
+                                Column(horizontalAlignment = Alignment.End) {
+                                    Text(
+                                        currencyFormat.format(expense.installmentAmount),
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = FontWeight.Bold,
+                                    )
+                                    Row {
+                                        IconButton(onClick = { onEditExpense(expense.installmentGroupId) }) {
+                                            Icon(Icons.Filled.Edit, contentDescription = "Editar")
+                                        }
+                                        IconButton(onClick = { pendingDeleteGroupId = expense.installmentGroupId }) {
+                                            Icon(Icons.Filled.Delete, contentDescription = "Excluir")
+                                        }
                                     }
                                 }
                             }

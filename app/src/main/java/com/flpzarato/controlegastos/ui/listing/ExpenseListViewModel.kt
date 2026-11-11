@@ -26,6 +26,7 @@ data class ExpenseListUiState(
     val expenses: List<ExpenseEntity> = emptyList(),
     val categoryNames: Map<String, String> = emptyMap(),
     val userNames: Map<String, String> = emptyMap(),
+    val isLoading: Boolean = true,
 ) {
     val total get() = expenses.sumOf { it.installmentAmount }
 }
@@ -56,6 +57,7 @@ class ExpenseListViewModel @Inject constructor(
             expenses = expenses,
             categoryNames = categories.associate { it.id to it.name },
             userNames = users.associate { it.email to it.displayName },
+            isLoading = false,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ExpenseListUiState())
 

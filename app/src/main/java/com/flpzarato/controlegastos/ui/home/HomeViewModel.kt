@@ -23,6 +23,7 @@ data class HomeUiState(
     val total: BigDecimal = BigDecimal.ZERO,
     val byCategory: List<CategoryBreakdown> = emptyList(),
     val byUser: List<UserBreakdown> = emptyList(),
+    val isLoading: Boolean = true,
 )
 
 @HiltViewModel
@@ -65,6 +66,7 @@ class HomeViewModel @Inject constructor(
             total = expenses.sumOf { it.installmentAmount },
             byCategory = byCategory,
             byUser = byUser,
+            isLoading = false,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUiState())
 }

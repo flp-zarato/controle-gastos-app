@@ -15,7 +15,11 @@ import javax.inject.Inject
 
 data class InvoiceSummary(val competenceMonth: String, val total: BigDecimal, val count: Int)
 
-data class InvoiceListUiState(val cardNickname: String = "", val invoices: List<InvoiceSummary> = emptyList())
+data class InvoiceListUiState(
+    val cardNickname: String = "",
+    val invoices: List<InvoiceSummary> = emptyList(),
+    val isLoading: Boolean = true,
+)
 
 /** Lists every competência (fatura) that has at least one expense for this card — read-only, no paid/unpaid status. */
 @HiltViewModel
@@ -37,6 +41,7 @@ class InvoiceListViewModel @Inject constructor(
         InvoiceListUiState(
             cardNickname = cards.firstOrNull { it.id == cardId }?.nickname ?: "Cartão",
             invoices = invoices,
+            isLoading = false,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), InvoiceListUiState())
 }
