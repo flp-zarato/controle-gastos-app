@@ -193,7 +193,7 @@ class SheetsSyncRepository @Inject constructor(
 
     private suspend fun pushDirtyExpenses(spreadsheetId: String, existingRows: List<List<String>>) {
         pushDirtyBatch(
-            spreadsheetId, SheetSchema.TAB_LANCAMENTOS, SheetSchema.RANGE_LANCAMENTOS, "L", existingRows,
+            spreadsheetId, SheetSchema.TAB_LANCAMENTOS, SheetSchema.RANGE_LANCAMENTOS, "N", existingRows,
             dirty = expenseDao.getDirty(),
             keyOf = { it.id },
             toRow = { it.toRow() },
