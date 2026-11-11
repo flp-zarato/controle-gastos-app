@@ -45,15 +45,23 @@ class GoogleAuthManager @Inject constructor(
     private val tokenMutex = Mutex()
     private var cachedToken: CachedToken? = null
 
-    /** Step 1, done once on the login screen: find out which Google account the person picked. */
-    suspend fun signIn(): Result<SignedInUser> = runCatching {
+    /**
+     * Step 1, done once on the login screen: find out which Google account the person picked.
+     *
+     * [activityContext] must be an Activity-based context (e.g. from `LocalContext.current` in a
+     * Composable hosted by an Activity), not the Application context this class is otherwise
+     * injected with — Credential Manager needs it to show the account-picker UI, and fails with
+     * "Failed to launch the selector UI... ensure the context parameter is an Activity-based
+     * context" on some devices/Play Services versions if given an Application context instead.
+     */
+    suspend fun signIn(activityContext: Context): Result<SignedInUser> = runCatching {
         val webClientId = context.getString(R.string.default_web_client_id)
         val option = GetGoogleIdOption.Builder()
             .setFilterByAuthorizedAccounts(false)
             .setServerClientId(webClientId)
             .build()
         val request = GetCredentialRequest.Builder().addCredentialOption(option).build()
-        val response = credentialManager.getCredential(context, request)
+        val response = credentialManager.getCredential(activityContext, request)
         val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(response.credential.data)
         SignedInUser(
             email = googleIdTokenCredential.id,

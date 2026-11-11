@@ -1,6 +1,7 @@
 package com.flpzarato.controlegastos.ui.login
 
 import android.app.PendingIntent
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.flpzarato.controlegastos.data.prefs.UserPreferences
@@ -36,10 +37,10 @@ class LoginViewModel @Inject constructor(
     private val _state = MutableStateFlow<LoginUiState>(LoginUiState.Idle)
     val state: StateFlow<LoginUiState> = _state.asStateFlow()
 
-    fun onSignInClicked() {
+    fun onSignInClicked(activityContext: Context) {
         viewModelScope.launch {
             _state.value = LoginUiState.Loading
-            authManager.signIn()
+            authManager.signIn(activityContext)
                 .onSuccess { user ->
                     userPreferences.saveSignedInUser(user.email, user.displayName)
                     when (val outcome = authManager.requestSheetsAuthorization()) {

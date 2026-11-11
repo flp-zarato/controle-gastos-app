@@ -24,6 +24,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -36,6 +37,7 @@ fun LoginScreen(
     viewModel: LoginViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
+    val context = LocalContext.current
 
     val consentLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartIntentSenderForResult(),
@@ -78,11 +80,14 @@ fun LoginScreen(
                 is LoginUiState.Loading -> CircularProgressIndicator()
                 is LoginUiState.Error -> {
                     Text(s.message, color = MaterialTheme.colorScheme.error)
-                    Button(onClick = viewModel::onSignInClicked, modifier = Modifier.padding(top = 16.dp)) {
+                    Button(
+                        onClick = { viewModel.onSignInClicked(context) },
+                        modifier = Modifier.padding(top = 16.dp),
+                    ) {
                         Text(stringResource(R.string.login_button))
                     }
                 }
-                else -> Button(onClick = viewModel::onSignInClicked) {
+                else -> Button(onClick = { viewModel.onSignInClicked(context) }) {
                     Text(stringResource(R.string.login_button))
                 }
             }
