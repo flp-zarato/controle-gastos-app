@@ -13,6 +13,7 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -71,107 +72,109 @@ fun ControleGastosNavHost() {
     val currentRoute = backStackEntry?.destination?.route
     val showBottomBar = currentRoute in bottomDestinations.map { it.route }
 
-    Scaffold(
-        bottomBar = {
-            if (showBottomBar) {
-                NavigationBar {
-                    bottomDestinations.forEach { destination ->
-                        NavigationBarItem(
-                            selected = currentRoute == destination.route,
-                            onClick = {
-                                navController.navigate(destination.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
-                            },
-                            icon = { Icon(destination.icon, contentDescription = destination.label) },
-                            label = { Text(destination.label) },
-                        )
+    CompositionLocalProvider(LocalNavController provides navController) {
+        Scaffold(
+            bottomBar = {
+                if (showBottomBar) {
+                    NavigationBar {
+                        bottomDestinations.forEach { destination ->
+                            NavigationBarItem(
+                                selected = currentRoute == destination.route,
+                                onClick = {
+                                    navController.navigate(destination.route) {
+                                        popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
+                                },
+                                icon = { Icon(destination.icon, contentDescription = destination.label) },
+                                label = { Text(destination.label) },
+                            )
+                        }
                     }
                 }
-            }
-        },
-    ) { padding ->
-        NavHost(
-            navController = navController,
-            startDestination = Routes.LOGIN,
-            modifier = Modifier.padding(padding),
-        ) {
-            composable(Routes.LOGIN) {
-                LoginScreen(onLoggedIn = {
-                    navController.navigate(Routes.INICIO) {
-                        popUpTo(Routes.LOGIN) { inclusive = true }
-                    }
-                })
-            }
-            composable(Routes.INICIO) { HomeScreen() }
-            composable(Routes.LANCAMENTOS) {
-                ExpenseListScreen(
-                    onAddExpense = { navController.navigate(Routes.NOVO_GASTO) },
-                    onEditExpense = { groupId -> navController.navigate(Routes.editarGastoRoute(groupId)) },
-                )
-            }
-            composable(Routes.NOVO_GASTO) {
-                AddExpenseScreen(
-                    onSaved = { navController.popBackStack() },
-                    onBack = { navController.popBackStack() },
-                )
-            }
-            composable(
-                route = "${Routes.EDITAR_GASTO}/{groupId}",
-                arguments = listOf(navArgument("groupId") { type = NavType.StringType }),
+            },
+        ) { padding ->
+            NavHost(
+                navController = navController,
+                startDestination = Routes.LOGIN,
+                modifier = Modifier.padding(padding),
             ) {
-                AddExpenseScreen(
-                    onSaved = { navController.popBackStack() },
-                    onBack = { navController.popBackStack() },
-                )
-            }
-            composable(Routes.CATEGORIAS) { CategoriesScreen() }
-            composable(Routes.CARTOES) {
-                CardsScreen(onOpenInvoices = { cardId -> navController.navigate(Routes.faturasRoute(cardId)) })
-            }
-            composable(Routes.RECORRENTES) {
-                RecurringListScreen(
-                    onAddRecurring = { navController.navigate(Routes.NOVO_RECORRENTE) },
-                    onEditRecurring = { id -> navController.navigate(Routes.editarRecorrenteRoute(id)) },
-                )
-            }
-            composable(Routes.NOVO_RECORRENTE) {
-                RecurringFormScreen(
-                    onSaved = { navController.popBackStack() },
-                    onBack = { navController.popBackStack() },
-                )
-            }
-            composable(
-                route = "${Routes.EDITAR_RECORRENTE}/{recurringId}",
-                arguments = listOf(navArgument("recurringId") { type = NavType.StringType }),
-            ) {
-                RecurringFormScreen(
-                    onSaved = { navController.popBackStack() },
-                    onBack = { navController.popBackStack() },
-                )
-            }
-            composable(
-                route = "${Routes.FATURAS}/{cardId}",
-                arguments = listOf(navArgument("cardId") { type = NavType.StringType }),
-            ) { backStackEntry ->
-                val cardId = backStackEntry.arguments?.getString("cardId").orEmpty()
-                InvoiceListScreen(
-                    onOpenInvoice = { competence ->
-                        navController.navigate(Routes.faturaDetalheRoute(cardId, competence))
-                    },
-                    onBack = { navController.popBackStack() },
-                )
-            }
-            composable(
-                route = "${Routes.FATURA_DETALHE}/{cardId}/{competence}",
-                arguments = listOf(
-                    navArgument("cardId") { type = NavType.StringType },
-                    navArgument("competence") { type = NavType.StringType },
-                ),
-            ) {
-                InvoiceDetailScreen(onBack = { navController.popBackStack() })
+                composable(Routes.LOGIN) {
+                    LoginScreen(onLoggedIn = {
+                        navController.navigate(Routes.INICIO) {
+                            popUpTo(Routes.LOGIN) { inclusive = true }
+                        }
+                    })
+                }
+                composable(Routes.INICIO) { HomeScreen() }
+                composable(Routes.LANCAMENTOS) {
+                    ExpenseListScreen(
+                        onAddExpense = { navController.navigate(Routes.NOVO_GASTO) },
+                        onEditExpense = { groupId -> navController.navigate(Routes.editarGastoRoute(groupId)) },
+                    )
+                }
+                composable(Routes.NOVO_GASTO) {
+                    AddExpenseScreen(
+                        onSaved = { navController.popBackStack() },
+                        onBack = { navController.popBackStack() },
+                    )
+                }
+                composable(
+                    route = "${Routes.EDITAR_GASTO}/{groupId}",
+                    arguments = listOf(navArgument("groupId") { type = NavType.StringType }),
+                ) {
+                    AddExpenseScreen(
+                        onSaved = { navController.popBackStack() },
+                        onBack = { navController.popBackStack() },
+                    )
+                }
+                composable(Routes.CATEGORIAS) { CategoriesScreen() }
+                composable(Routes.CARTOES) {
+                    CardsScreen(onOpenInvoices = { cardId -> navController.navigate(Routes.faturasRoute(cardId)) })
+                }
+                composable(Routes.RECORRENTES) {
+                    RecurringListScreen(
+                        onAddRecurring = { navController.navigate(Routes.NOVO_RECORRENTE) },
+                        onEditRecurring = { id -> navController.navigate(Routes.editarRecorrenteRoute(id)) },
+                    )
+                }
+                composable(Routes.NOVO_RECORRENTE) {
+                    RecurringFormScreen(
+                        onSaved = { navController.popBackStack() },
+                        onBack = { navController.popBackStack() },
+                    )
+                }
+                composable(
+                    route = "${Routes.EDITAR_RECORRENTE}/{recurringId}",
+                    arguments = listOf(navArgument("recurringId") { type = NavType.StringType }),
+                ) {
+                    RecurringFormScreen(
+                        onSaved = { navController.popBackStack() },
+                        onBack = { navController.popBackStack() },
+                    )
+                }
+                composable(
+                    route = "${Routes.FATURAS}/{cardId}",
+                    arguments = listOf(navArgument("cardId") { type = NavType.StringType }),
+                ) { backStackEntry ->
+                    val cardId = backStackEntry.arguments?.getString("cardId").orEmpty()
+                    InvoiceListScreen(
+                        onOpenInvoice = { competence ->
+                            navController.navigate(Routes.faturaDetalheRoute(cardId, competence))
+                        },
+                        onBack = { navController.popBackStack() },
+                    )
+                }
+                composable(
+                    route = "${Routes.FATURA_DETALHE}/{cardId}/{competence}",
+                    arguments = listOf(
+                        navArgument("cardId") { type = NavType.StringType },
+                        navArgument("competence") { type = NavType.StringType },
+                    ),
+                ) {
+                    InvoiceDetailScreen(onBack = { navController.popBackStack() })
+                }
             }
         }
     }

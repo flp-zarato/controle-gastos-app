@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import com.flpzarato.controlegastos.data.remote.auth.SheetsAuthException
 import com.flpzarato.controlegastos.data.repository.SheetsSyncRepository
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
@@ -13,16 +14,32 @@ class SheetsSyncWorker @AssistedInject constructor(
     @Assisted context: Context,
     @Assisted params: WorkerParameters,
     private val syncRepository: SheetsSyncRepository,
+    private val syncStatusRepository: SyncStatusRepository,
 ) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
+        syncStatusRepository.markSyncing()
         val result = syncRepository.sync()
-        return if (result.isSuccess) {
-            Result.success()
-        } else {
-            // Keep the local, offline-first copy intact and simply try again later.
-            Result.retry()
-        }
+        return result.fold(
+            onSuccess = {
+                syncStatusRepository.markIdle()
+                Result.success()
+            },
+            onFailure = { error ->
+                if (error is SheetsAuthException) {
+                    syncStatusRepository.markError(
+                        message = "Não foi possível sincronizar. Faça login novamente.",
+                        needsLogin = true,
+                    )
+                } else {
+                    syncStatusRepository.markError(
+                        message = "Não foi possível sincronizar agora. Vamos tentar de novo em breve.",
+                    )
+                }
+                // Keep the local, offline-first copy intact and simply try again later.
+                Result.retry()
+            },
+        )
     }
 
     companion object {
