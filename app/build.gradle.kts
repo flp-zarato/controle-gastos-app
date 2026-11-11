@@ -35,6 +35,17 @@ android {
                 keyPassword = keystoreProperties.getProperty("keyPassword")
             }
         }
+        getByName("debug") {
+            // Checked into the repo (debug.keystore, root) so every debug build — local,
+            // emulator or CI — signs with the same key/SHA-1. See README for the fingerprint
+            // to register as this app's Android OAuth client in Google Cloud Console;
+            // without a stable SHA-1, Google Sign-In fails with "No credential available"
+            // on any build signed with a different (e.g. CI-generated, ephemeral) keystore.
+            storeFile = rootProject.file("debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
     }
 
     buildTypes {
@@ -47,6 +58,7 @@ android {
         }
         debug {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
 

@@ -15,6 +15,11 @@
 *.keystore
 keystore.properties
 
+# Exception: the fixed debug keystore IS committed (see README) so every debug build —
+# local, emulator or CI — signs with the same, publicly-known-password key. It's not a
+# secret: it only ever signs debug builds, never release.
+!/debug.keystore
+
 # Google services / OAuth client config - contains project-specific IDs, kept local
 /app/src/main/res/values/secrets.xml
 

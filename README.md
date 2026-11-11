@@ -69,13 +69,42 @@ esse ID (ou a URL inteira) na tela de login do app na primeira vez que abrir.
      Android — é esse client ID que o Credential Manager usa para o login). Copie o
      Client ID gerado.
    - Crie também um client do tipo **Android**, informando o `applicationId`
-     (`com.flpzarato.controlegastos`) e o **SHA-1** do seu certificado de assinatura
-     (para o debug, rode `./gradlew signingReport` e copie o SHA-1 da variante *debug*).
+     (`com.flpzarato.controlegastos`) e o **SHA-1** do certificado de assinatura. Para
+     builds de debug (local, emulador ou CI), o projeto já versiona um
+     `debug.keystore` fixo na raiz (ver abaixo) — rode `./gradlew signingReport` e use
+     o SHA-1 da variante *debug* que aparecer; vai ser sempre o mesmo, em qualquer
+     máquina ou no GitHub Actions, então só precisa cadastrar uma vez.
 5. Copie `secrets.xml.example` (raiz do projeto) para
    `app/src/main/res/values/secrets.xml` e cole o Client ID do tipo **Web** em
    `default_web_client_id`. Esse arquivo não é versionado no Git.
 
-### 3. (Opcional) Build automático via GitHub Actions
+### 3. Keystore de debug fixo (já está pronto — só cadastrar o SHA-1)
+
+`debug.keystore` (raiz do projeto) é versionado no Git de propósito e usado por
+`signingConfigs.debug` em `app/build.gradle.kts` para todo build de debug — local,
+emulador ou CI. Isso não é um segredo: é só a assinatura de debug, com as senhas
+padrão do Android (`storePassword`/`keyPassword` = `android`,
+`keyAlias` = `androiddebugkey`), e nunca assina um build de release.
+
+O motivo de existir: sem um keystore fixo, cada máquina (e cada execução do GitHub
+Actions, que começa numa VM limpa) gera seu próprio `~/.android/debug.keystore`
+aleatório — então o SHA-1 do APK muda a cada build, nunca bate com o que está
+cadastrado no Google Cloud Console, e o login com Google falha com
+**"No credential available"** só nos APKs vindos de outra máquina/CI (builds locais
+no Android Studio funcionam porque sempre reusam o mesmo keystore local).
+
+Depois de clonar o repositório, rode `./gradlew signingReport` e confirme que o
+SHA-1 da variante *debug* é sempre:
+
+```
+SHA1: 9A:F2:B4:E8:28:2D:64:FE:8F:1E:B3:BE:5B:D5:50:9E:B2:CD:D9:40
+```
+
+Esse é o único SHA-1 de debug que precisa estar cadastrado como client **Android**
+no Google Cloud Console (passo 2.4 acima) — repetir `signingReport` em qualquer
+outra máquina, ou numa run do CI, deve sempre devolver o mesmo valor.
+
+### 4. (Opcional) Build automático via GitHub Actions
 
 O workflow em `.github/workflows/build.yml` já compila e sobe o APK como artefato
 a cada push. Para ele também preencher o `default_web_client_id` corretamente,
