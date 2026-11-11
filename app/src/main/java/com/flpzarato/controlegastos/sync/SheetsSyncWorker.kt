@@ -1,6 +1,7 @@
 package com.flpzarato.controlegastos.sync
 
 import android.content.Context
+import android.util.Log
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
@@ -8,6 +9,8 @@ import com.flpzarato.controlegastos.data.remote.auth.SheetsAuthException
 import com.flpzarato.controlegastos.data.repository.SheetsSyncRepository
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
+
+private const val TAG = "SheetsSync"
 
 @HiltWorker
 class SheetsSyncWorker @AssistedInject constructor(
@@ -27,11 +30,13 @@ class SheetsSyncWorker @AssistedInject constructor(
             },
             onFailure = { error ->
                 if (error is SheetsAuthException) {
+                    Log.e(TAG, "Sync failed: auth error — ${error.message}", error)
                     syncStatusRepository.markError(
                         message = "Não foi possível sincronizar. Faça login novamente.",
                         needsLogin = true,
                     )
                 } else {
+                    Log.e(TAG, "Sync failed: ${error.message}", error)
                     syncStatusRepository.markError(
                         message = "Não foi possível sincronizar agora. Vamos tentar de novo em breve.",
                     )
