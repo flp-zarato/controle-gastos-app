@@ -79,6 +79,13 @@ fun InvoiceDetailScreen(
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
+                                if (!expense.observation.isNullOrBlank()) {
+                                    Text(
+                                        expense.observation,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
                             }
                             Text(
                                 currencyFormat.format(expense.installmentAmount),
