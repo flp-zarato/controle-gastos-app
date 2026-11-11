@@ -184,7 +184,9 @@ fun AddExpenseScreen(
                 Text(
                     "Como esse gasto foi feito no cartão de crédito, ele será lançado na fatura de " +
                         "${formatCompetenceLabel(competence)}, com base no fechamento do cartão, e não " +
-                        "necessariamente na fatura atual. Confira se está correto antes de salvar.",
+                        "necessariamente na fatura atual. Confira se está correto antes de salvar.\n\n" +
+                        "Normalmente essa diferença vem da data da compra ou do cartão selecionado " +
+                        "(e do dia de fechamento dele) — revise esses dois campos se não for o esperado.",
                 )
             },
             confirmButton = { TextButton(onClick = viewModel::confirmInvoiceWarning) { Text("Confirmar") } },
