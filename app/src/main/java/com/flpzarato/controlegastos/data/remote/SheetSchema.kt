@@ -25,9 +25,9 @@ object SheetSchema {
     const val RANGE_CATEGORIAS = "$TAB_CATEGORIAS!A2:C"
     val HEADER_CATEGORIAS = listOf("ID", "Nome", "Deletado")
 
-    const val RANGE_CARTOES = "$TAB_CARTOES!A2:G"
+    const val RANGE_CARTOES = "$TAB_CARTOES!A2:H"
     val HEADER_CARTOES = listOf(
-        "ID", "Apelido", "TitularEmail", "Banco", "DiaFechamento", "DiaVencimento", "Deletado",
+        "ID", "Apelido", "TitularEmail", "Banco", "DiaFechamento", "DiaVencimento", "Deletado", "LimiteMensal",
     )
 
     const val RANGE_USUARIOS = "$TAB_USUARIOS!A2:B"

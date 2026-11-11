@@ -70,6 +70,7 @@ fun List<String>.toCategoryEntity(): CategoryEntity? {
 
 fun CardEntity.toRow(): List<String> = listOf(
     id, nickname, holderEmail, bank, closingDay.toString(), dueDay.toString(), deleted.toString(),
+    monthlyLimit?.toPlainString().orEmpty(),
 )
 
 fun List<String>.toCardEntity(): CardEntity? {
@@ -81,6 +82,7 @@ fun List<String>.toCardEntity(): CardEntity? {
         bank = cell(3) ?: return null,
         closingDay = cell(4)?.toIntOrNull() ?: return null,
         dueDay = cell(5)?.toIntOrNull() ?: return null,
+        monthlyLimit = cell(7)?.let { BigDecimal(it) },
         dirty = false,
         deleted = cell(6)?.toBoolean() ?: false,
     )

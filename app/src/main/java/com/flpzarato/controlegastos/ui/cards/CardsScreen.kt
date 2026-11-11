@@ -23,6 +23,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -40,6 +41,9 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.flpzarato.controlegastos.ui.common.ControleGastosTopBar
+import com.flpzarato.controlegastos.ui.common.CurrencyAmountField
+import java.text.NumberFormat
+import java.util.Locale
 
 @Composable
 fun CardsScreen(
@@ -49,6 +53,8 @@ fun CardsScreen(
     val cards by viewModel.cards.collectAsState()
     val knownUsers by viewModel.knownUsers.collectAsState()
     val form by viewModel.form.collectAsState()
+    val cardProgress by viewModel.cardProgress.collectAsState()
+    val currencyFormat = remember(Locale("pt", "BR")) { NumberFormat.getCurrencyInstance(Locale("pt", "BR")) }
 
     Scaffold(
         topBar = { ControleGastosTopBar(title = "Cartões") },
@@ -106,6 +112,13 @@ fun CardsScreen(
                             modifier = Modifier.weight(1f),
                         )
                     }
+                    Spacer(Modifier.height(8.dp))
+                    CurrencyAmountField(
+                        digitsValue = form.monthlyLimit,
+                        onDigitsChanged = viewModel::onMonthlyLimitChanged,
+                        label = "Limite mensal (opcional)",
+                        modifier = Modifier.fillMaxWidth(),
+                    )
 
                     form.error?.let {
                         Spacer(Modifier.height(8.dp))
@@ -148,6 +161,26 @@ fun CardsScreen(
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
+                            cardProgress[card.id]?.let { progress ->
+                                val overHalf = progress.percentage >= 50
+                                val highlightColor = if (overHalf) {
+                                    MaterialTheme.colorScheme.error
+                                } else {
+                                    MaterialTheme.colorScheme.primary
+                                }
+                                Spacer(Modifier.height(6.dp))
+                                LinearProgressIndicator(
+                                    progress = { (progress.percentage / 100f).coerceIn(0f, 1f) },
+                                    color = highlightColor,
+                                    modifier = Modifier.fillMaxWidth(),
+                                )
+                                Text(
+                                    "${currencyFormat.format(progress.spent)} de " +
+                                        "${currencyFormat.format(progress.limit)} (${progress.percentage}%)",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = if (overHalf) highlightColor else MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                         }
                         IconButton(onClick = { viewModel.startEditing(card) }) {
                             Icon(Icons.Filled.Edit, contentDescription = "Editar")

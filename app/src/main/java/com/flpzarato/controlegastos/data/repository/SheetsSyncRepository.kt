@@ -213,7 +213,7 @@ class SheetsSyncRepository @Inject constructor(
 
     private suspend fun pushDirtyCards(spreadsheetId: String, existingRows: List<List<String>>) {
         pushDirtyBatch(
-            spreadsheetId, SheetSchema.TAB_CARTOES, SheetSchema.RANGE_CARTOES, "G", existingRows,
+            spreadsheetId, SheetSchema.TAB_CARTOES, SheetSchema.RANGE_CARTOES, "H", existingRows,
             dirty = cardDao.getDirty(),
             keyOf = { it.id },
             toRow = { it.toRow() },
