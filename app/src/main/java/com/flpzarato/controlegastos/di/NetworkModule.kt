@@ -21,7 +21,15 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideJson(): Json = Json { ignoreUnknownKeys = true; isLenient = true }
+    fun provideJson(): Json = Json {
+        ignoreUnknownKeys = true
+        isLenient = true
+        // Without this, kotlinx.serialization omits any field left at its default value —
+        // e.g. BatchUpdateValuesRequest.valueInputOption ("RAW") — which the Sheets API
+        // rejects as a required field with HTTP 400 ("'valueInputOption' is required but
+        // not specified").
+        encodeDefaults = true
+    }
 
     @Provides
     @Singleton
