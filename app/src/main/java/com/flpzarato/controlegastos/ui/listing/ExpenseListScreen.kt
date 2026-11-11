@@ -48,6 +48,7 @@ import com.flpzarato.controlegastos.ui.common.ControleGastosTopBar
 import com.flpzarato.controlegastos.ui.common.EmptyState
 import com.flpzarato.controlegastos.ui.common.categoryColor
 import com.flpzarato.controlegastos.ui.common.categoryIcon
+import com.flpzarato.controlegastos.ui.common.installmentMonthsAbbreviation
 import java.text.NumberFormat
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -107,7 +108,7 @@ fun ExpenseListScreen(
                 ) {
                     items(state.expenses, key = { it.id }) { expense ->
                         val parcelaLabel = if (expense.installmentCount > 1) {
-                            " · ${expense.installmentNumber}/${expense.installmentCount}"
+                            " · ${expense.installmentCount}x"
                         } else {
                             ""
                         }
@@ -144,6 +145,14 @@ fun ExpenseListScreen(
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
+                                    if (expense.installmentCount > 1) {
+                                        Text(
+                                            "Parcelas em: " +
+                                                installmentMonthsAbbreviation(expense.competenceMonth, expense.installmentCount),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    }
                                     if (!expense.observation.isNullOrBlank()) {
                                         Text(
                                             expense.observation,
@@ -155,7 +164,7 @@ fun ExpenseListScreen(
                                 Spacer(Modifier.width(8.dp))
                                 Column(horizontalAlignment = Alignment.End) {
                                     Text(
-                                        currencyFormat.format(expense.installmentAmount),
+                                        currencyFormat.format(expense.totalAmount ?: expense.installmentAmount),
                                         style = MaterialTheme.typography.titleSmall,
                                         fontWeight = FontWeight.Bold,
                                     )

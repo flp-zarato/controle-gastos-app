@@ -28,7 +28,7 @@ data class ExpenseListUiState(
     val userNames: Map<String, String> = emptyMap(),
     val isLoading: Boolean = true,
 ) {
-    val total get() = expenses.sumOf { it.installmentAmount }
+    val total get() = expenses.sumOf { it.totalAmount ?: it.installmentAmount }
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -43,7 +43,7 @@ class ExpenseListViewModel @Inject constructor(
 
     private val expensesForFilter = filter.flatMapLatest { selected ->
         val month = if (selected == MonthFilter.ATUAL) YearMonth.now() else YearMonth.now().minusMonths(1)
-        expenseRepository.observeMonths(listOf(month))
+        expenseRepository.observePurchaseGroupsForMonths(listOf(month))
     }
 
     val uiState: StateFlow<ExpenseListUiState> = combine(

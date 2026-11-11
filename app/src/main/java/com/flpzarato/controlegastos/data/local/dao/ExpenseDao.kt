@@ -13,6 +13,18 @@ interface ExpenseDao {
     @Query("SELECT * FROM expenses WHERE deleted = 0 AND competenceMonth IN (:months) ORDER BY purchaseDate DESC")
     fun observeByCompetenceMonths(months: List<String>): Flow<List<ExpenseEntity>>
 
+    /**
+     * Only the first installment of each group whose purchase happened in [purchaseMonth]
+     * ("yyyy-MM") — it represents the whole purchase (its [ExpenseEntity.totalAmount]),
+     * regardless of which invoice competência any of its installments land on. Used by
+     * Lançamentos/Início so a parcelada shows up once, in the month it was actually made.
+     */
+    @Query(
+        "SELECT * FROM expenses WHERE deleted = 0 AND installmentNumber = 1 AND " +
+            "substr(purchaseDate, 1, 7) = :purchaseMonth ORDER BY purchaseDate DESC",
+    )
+    fun observeFirstInstallmentsByPurchaseMonth(purchaseMonth: String): Flow<List<ExpenseEntity>>
+
     @Query("SELECT * FROM expenses WHERE installmentGroupId = :groupId AND deleted = 0")
     suspend fun getByGroup(groupId: String): List<ExpenseEntity>
 

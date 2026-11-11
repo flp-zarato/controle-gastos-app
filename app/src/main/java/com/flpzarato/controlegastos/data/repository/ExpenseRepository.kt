@@ -7,6 +7,7 @@ import com.flpzarato.controlegastos.data.local.entity.PaymentMethod
 import com.flpzarato.controlegastos.domain.InstallmentCalculator
 import com.flpzarato.controlegastos.sync.SyncScheduler
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.YearMonth
@@ -30,8 +31,15 @@ class ExpenseRepository @Inject constructor(
         return expenseDao.observeByCompetenceMonths(months)
     }
 
-    fun observeMonths(months: List<YearMonth>): Flow<List<ExpenseEntity>> =
-        expenseDao.observeByCompetenceMonths(months.map { it.format(competenceFormatter) })
+    /**
+     * One row per purchase (its first installment, carrying [ExpenseEntity.totalAmount]) made
+     * in any of [months] ("yyyy-MM"-keyed by purchase date, not invoice competência) — used by
+     * Lançamentos/Início. See [com.flpzarato.controlegastos.data.local.dao.ExpenseDao.observeFirstInstallmentsByPurchaseMonth].
+     */
+    fun observePurchaseGroupsForMonths(months: List<YearMonth>): Flow<List<ExpenseEntity>> {
+        val flows = months.map { expenseDao.observeFirstInstallmentsByPurchaseMonth(it.format(competenceFormatter)) }
+        return combine(flows) { results -> results.flatMap { it }.sortedByDescending { it.purchaseDate } }
+    }
 
     suspend fun getGroup(installmentGroupId: String): List<ExpenseEntity> =
         expenseDao.getByGroup(installmentGroupId)

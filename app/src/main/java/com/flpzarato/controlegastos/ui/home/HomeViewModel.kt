@@ -34,7 +34,7 @@ class HomeViewModel @Inject constructor(
 ) : ViewModel() {
 
     val uiState: StateFlow<HomeUiState> = combine(
-        expenseRepository.observeMonths(listOf(YearMonth.now())),
+        expenseRepository.observePurchaseGroupsForMonths(listOf(YearMonth.now())),
         categoryDao.observeActive(),
         userDao.observeAll(),
     ) { expenses, categories, users ->
@@ -46,7 +46,7 @@ class HomeViewModel @Inject constructor(
                 CategoryBreakdown(
                     categoryId = categoryId,
                     categoryName = categoryNames[categoryId] ?: "Outros",
-                    total = items.sumOf { it.installmentAmount },
+                    total = items.sumOf { it.totalAmount ?: it.installmentAmount },
                 )
             }
             .sortedByDescending { it.total }
@@ -56,14 +56,14 @@ class HomeViewModel @Inject constructor(
                 UserBreakdown(
                     email = email,
                     displayName = userNames[email] ?: email,
-                    total = items.sumOf { it.installmentAmount },
+                    total = items.sumOf { it.totalAmount ?: it.installmentAmount },
                 )
             }
             .sortedByDescending { it.total }
 
         HomeUiState(
             monthLabel = currentMonthLabel(),
-            total = expenses.sumOf { it.installmentAmount },
+            total = expenses.sumOf { it.totalAmount ?: it.installmentAmount },
             byCategory = byCategory,
             byUser = byUser,
             isLoading = false,
