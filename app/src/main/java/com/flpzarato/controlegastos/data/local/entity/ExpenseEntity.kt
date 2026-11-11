@@ -1,6 +1,7 @@
 package com.flpzarato.controlegastos.data.local.entity
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 import java.math.BigDecimal
 import java.time.LocalDate
@@ -11,8 +12,20 @@ import java.util.UUID
  * exactly one row with [installmentNumber] = 1 and [installmentCount] = 1.
  * A credit purchase split in N times produces N rows that share the same
  * [installmentGroupId] so they can be edited or deleted together.
+ *
+ * Indices: (deleted, competenceMonth) covers [ExpenseDao.observeByCompetenceMonths], which
+ * always filters both together, and also serves a standalone `deleted` lookup via its
+ * leftmost column; cardId and dirty get their own indices since they're filtered on alone
+ * (fatura screens, and every push-to-sheet query, respectively).
  */
-@Entity(tableName = "expenses")
+@Entity(
+    tableName = "expenses",
+    indices = [
+        Index(value = ["deleted", "competenceMonth"]),
+        Index(value = ["cardId"]),
+        Index(value = ["dirty"]),
+    ],
+)
 data class ExpenseEntity(
     @PrimaryKey val id: String = UUID.randomUUID().toString(),
     val installmentGroupId: String,
