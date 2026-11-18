@@ -141,12 +141,14 @@ Início para ver os lançamentos dela separados em "Pagos" e "A pagar".
 ## Ícones e filtros
 
 Cada lançamento mostra um ícone pequeno indicando a forma de pagamento
-(Dinheiro, Débito, Crédito, Pix). Nas telas Lançamentos e Pagamentos por
-pessoa, chips de filtro (por forma de pagamento, categoria e, em Lançamentos,
-também por usuário) permitem restringir a lista — seleção múltipla,
-combináveis entre si e com os filtros de período já existentes. Nenhum chip
-selecionado numa dimensão significa "sem filtro" nela. Os filtros não
-persistem: resetam ao sair e voltar para a tela.
+(Dinheiro, Débito, Crédito, Pix), numa linha própria abaixo dos metadados do
+item. Nas telas Lançamentos e Pagamentos por pessoa, um botão "Filtros" (com
+um badge mostrando quantas dimensões têm filtro ativo) abre um bottom sheet
+com seções em acordeão — forma de pagamento, categoria e, em Lançamentos,
+também usuário — cada uma com checkboxes e uma opção "Todos". A seleção só
+vale depois de tocar "Aplicar"; "Cancelar" descarta o que foi mexido no
+sheet. Filtros são combináveis entre si e com os filtros de período já
+existentes, e não persistem: resetam ao sair e voltar para a tela.
 
 ## Fora de escopo (por enquanto)
 
