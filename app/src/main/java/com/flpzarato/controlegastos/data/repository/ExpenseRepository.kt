@@ -176,8 +176,13 @@ class ExpenseRepository @Inject constructor(
     ) {
         // Fetched before markGroupDeleted, which flips deleted = true and would make
         // getByGroup (deleted = 0) return nothing. Editing must never reset or reapply the
-        // auto-paid rule, so the original group's paid status always carries over as-is.
-        val originalPaid = expenseDao.getByGroup(oldGroupId).firstOrNull()?.paid ?: false
+        // auto-paid rule, so the original group's paid status always carries over as-is. The
+        // recurringTemplateId must carry over too — otherwise the edited expense loses its link
+        // to the template, launchDueRecurringExpenses() no longer finds anything for that
+        // template+competência, and recreates the original (unedited) expense on the next sync.
+        val original = expenseDao.getByGroup(oldGroupId).firstOrNull()
+        val originalPaid = original?.paid ?: false
+        val originalRecurringTemplateId = original?.recurringTemplateId
         expenseDao.markGroupDeleted(oldGroupId)
         addExpense(
             description = description,
@@ -189,6 +194,7 @@ class ExpenseRepository @Inject constructor(
             cardId = cardId,
             installmentCount = installmentCount,
             observation = observation,
+            recurringTemplateId = originalRecurringTemplateId,
             paid = originalPaid,
         )
     }
