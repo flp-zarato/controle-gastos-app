@@ -4,7 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.flpzarato.controlegastos.data.local.dao.CategoryDao
 import com.flpzarato.controlegastos.data.local.dao.UserDao
+import com.flpzarato.controlegastos.data.local.entity.CategoryEntity
 import com.flpzarato.controlegastos.data.local.entity.ExpenseEntity
+import com.flpzarato.controlegastos.data.local.entity.PaymentMethod
+import com.flpzarato.controlegastos.data.local.entity.UserEntity
 import com.flpzarato.controlegastos.data.repository.ExpenseRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -26,10 +29,17 @@ data class ExpenseListUiState(
     val expenses: List<ExpenseEntity> = emptyList(),
     val categoryNames: Map<String, String> = emptyMap(),
     val userNames: Map<String, String> = emptyMap(),
+    val allCategories: List<CategoryEntity> = emptyList(),
+    val allUsers: List<UserEntity> = emptyList(),
+    val selectedUserEmails: Set<String> = emptySet(),
+    val selectedCategoryIds: Set<String> = emptySet(),
+    val selectedPaymentMethods: Set<PaymentMethod> = emptySet(),
     val isLoading: Boolean = true,
 ) {
     val total get() = expenses.sumOf { it.totalAmount ?: it.installmentAmount }
 }
+
+private fun <T> Set<T>.toggled(item: T): Set<T> = if (item in this) this - item else this + item
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
@@ -40,29 +50,62 @@ class ExpenseListViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val filter = MutableStateFlow(MonthFilter.ATUAL)
+    private val selectedUserEmails = MutableStateFlow<Set<String>>(emptySet())
+    private val selectedCategoryIds = MutableStateFlow<Set<String>>(emptySet())
+    private val selectedPaymentMethods = MutableStateFlow<Set<PaymentMethod>>(emptySet())
 
     private val expensesForFilter = filter.flatMapLatest { selected ->
         val month = if (selected == MonthFilter.ATUAL) YearMonth.now() else YearMonth.now().minusMonths(1)
         expenseRepository.observePurchaseGroupsForMonths(listOf(month))
     }
 
+    private val selectedFilters = combine(
+        selectedUserEmails,
+        selectedCategoryIds,
+        selectedPaymentMethods,
+        ::Triple,
+    )
+
     val uiState: StateFlow<ExpenseListUiState> = combine(
         filter,
         expensesForFilter,
         categoryDao.observeActive(),
         userDao.observeAll(),
-    ) { selectedFilter, expenses, categories, users ->
+        selectedFilters,
+    ) { selectedFilter, expenses, categories, users, (selUsers, selCategories, selMethods) ->
+        val filtered = expenses.filter { expense ->
+            (selUsers.isEmpty() || expense.loggedByEmail in selUsers) &&
+                (selCategories.isEmpty() || expense.categoryId in selCategories) &&
+                (selMethods.isEmpty() || expense.paymentMethod in selMethods)
+        }
         ExpenseListUiState(
             filter = selectedFilter,
-            expenses = expenses,
+            expenses = filtered,
             categoryNames = categories.associate { it.id to it.name },
             userNames = users.associate { it.email to it.displayName },
+            allCategories = categories,
+            allUsers = users,
+            selectedUserEmails = selUsers,
+            selectedCategoryIds = selCategories,
+            selectedPaymentMethods = selMethods,
             isLoading = false,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ExpenseListUiState())
 
     fun onFilterChanged(newFilter: MonthFilter) {
         filter.value = newFilter
+    }
+
+    fun onUserFilterToggled(email: String) {
+        selectedUserEmails.value = selectedUserEmails.value.toggled(email)
+    }
+
+    fun onCategoryFilterToggled(categoryId: String) {
+        selectedCategoryIds.value = selectedCategoryIds.value.toggled(categoryId)
+    }
+
+    fun onPaymentMethodFilterToggled(method: PaymentMethod) {
+        selectedPaymentMethods.value = selectedPaymentMethods.value.toggled(method)
     }
 
     fun deleteGroup(groupId: String) {

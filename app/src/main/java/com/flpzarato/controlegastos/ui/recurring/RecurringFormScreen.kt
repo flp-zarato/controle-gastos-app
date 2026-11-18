@@ -39,6 +39,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.flpzarato.controlegastos.data.local.entity.PaymentMethod
 import com.flpzarato.controlegastos.ui.common.ControleGastosTopBar
 import com.flpzarato.controlegastos.ui.common.CurrencyAmountField
+import com.flpzarato.controlegastos.ui.common.paymentMethodLabel
 import com.flpzarato.controlegastos.ui.expense.OBSERVATION_MAX_LENGTH
 
 @Composable
@@ -125,7 +126,7 @@ fun RecurringFormScreen(
                     FilterChip(
                         selected = form.paymentMethod == method,
                         onClick = { viewModel.onPaymentMethodChanged(method) },
-                        label = { Text(method.label()) },
+                        label = { Text(paymentMethodLabel(method)) },
                         modifier = Modifier.padding(end = 8.dp),
                     )
                 }
@@ -179,13 +180,6 @@ fun RecurringFormScreen(
             }
         }
     }
-}
-
-private fun PaymentMethod.label(): String = when (this) {
-    PaymentMethod.DINHEIRO -> "Dinheiro"
-    PaymentMethod.DEBITO -> "Débito"
-    PaymentMethod.CREDITO -> "Crédito"
-    PaymentMethod.PIX -> "Pix"
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

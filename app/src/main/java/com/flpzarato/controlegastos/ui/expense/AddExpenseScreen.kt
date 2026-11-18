@@ -48,6 +48,7 @@ import com.flpzarato.controlegastos.data.local.entity.PaymentMethod
 import com.flpzarato.controlegastos.ui.common.ControleGastosTopBar
 import com.flpzarato.controlegastos.ui.common.CurrencyAmountField
 import com.flpzarato.controlegastos.ui.common.formatCompetenceLabel
+import com.flpzarato.controlegastos.ui.common.paymentMethodLabel
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
@@ -122,7 +123,7 @@ fun AddExpenseScreen(
                     FilterChip(
                         selected = form.paymentMethod == method,
                         onClick = { viewModel.onPaymentMethodChanged(method) },
-                        label = { Text(method.label()) },
+                        label = { Text(paymentMethodLabel(method)) },
                         modifier = Modifier.padding(end = 8.dp),
                     )
                 }
@@ -254,13 +255,6 @@ private fun PurchaseDateField(date: LocalDate, onDateSelected: (LocalDate) -> Un
             DatePicker(state = state)
         }
     }
-}
-
-private fun PaymentMethod.label(): String = when (this) {
-    PaymentMethod.DINHEIRO -> "Dinheiro"
-    PaymentMethod.DEBITO -> "Débito"
-    PaymentMethod.CREDITO -> "Crédito"
-    PaymentMethod.PIX -> "Pix"
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

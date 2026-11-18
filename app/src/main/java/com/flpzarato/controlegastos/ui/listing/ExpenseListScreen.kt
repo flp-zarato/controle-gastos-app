@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -22,6 +23,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -50,6 +52,8 @@ import com.flpzarato.controlegastos.ui.common.EmptyState
 import com.flpzarato.controlegastos.ui.common.categoryColor
 import com.flpzarato.controlegastos.ui.common.categoryIcon
 import com.flpzarato.controlegastos.ui.common.installmentMonthsAbbreviation
+import com.flpzarato.controlegastos.ui.common.paymentMethodIcon
+import com.flpzarato.controlegastos.ui.common.paymentMethodLabel
 import com.flpzarato.controlegastos.ui.invoice.PaymentStatusChip
 import java.text.NumberFormat
 import java.time.format.DateTimeFormatter
@@ -87,6 +91,50 @@ fun ExpenseListScreen(
                     onClick = { viewModel.onFilterChanged(MonthFilter.ANTERIOR) },
                     text = { Text("Mês anterior") },
                 )
+            }
+
+            LazyRow(
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp, start = 16.dp, end = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                items(PaymentMethod.entries.toList()) { method ->
+                    FilterChip(
+                        selected = method in state.selectedPaymentMethods,
+                        onClick = { viewModel.onPaymentMethodFilterToggled(method) },
+                        label = { Text(paymentMethodLabel(method)) },
+                        leadingIcon = {
+                            Icon(
+                                paymentMethodIcon(method),
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                            )
+                        },
+                    )
+                }
+            }
+            LazyRow(
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp, start = 16.dp, end = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                items(state.allCategories, key = { it.id }) { category ->
+                    FilterChip(
+                        selected = category.id in state.selectedCategoryIds,
+                        onClick = { viewModel.onCategoryFilterToggled(category.id) },
+                        label = { Text(category.name) },
+                    )
+                }
+            }
+            LazyRow(
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp, start = 16.dp, end = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                items(state.allUsers, key = { it.email }) { user ->
+                    FilterChip(
+                        selected = user.email in state.selectedUserEmails,
+                        onClick = { viewModel.onUserFilterToggled(user.email) },
+                        label = { Text(user.displayName) },
+                    )
+                }
             }
 
             Row(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
@@ -141,13 +189,22 @@ fun ExpenseListScreen(
                                         expense.description + parcelaLabel,
                                         style = MaterialTheme.typography.bodyLarge,
                                     )
-                                    Text(
-                                        "${expense.purchaseDate.format(dateFormatter)} · " +
-                                            "${state.categoryNames[expense.categoryId] ?: "—"} · " +
-                                            (state.userNames[expense.loggedByEmail] ?: expense.loggedByEmail),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(
+                                            "${expense.purchaseDate.format(dateFormatter)} · " +
+                                                "${state.categoryNames[expense.categoryId] ?: "—"} · " +
+                                                (state.userNames[expense.loggedByEmail] ?: expense.loggedByEmail),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                        Spacer(Modifier.width(4.dp))
+                                        Icon(
+                                            paymentMethodIcon(expense.paymentMethod),
+                                            contentDescription = paymentMethodLabel(expense.paymentMethod),
+                                            modifier = Modifier.size(14.dp),
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    }
                                     if (expense.installmentCount > 1) {
                                         Text(
                                             "Parcelas em: " +

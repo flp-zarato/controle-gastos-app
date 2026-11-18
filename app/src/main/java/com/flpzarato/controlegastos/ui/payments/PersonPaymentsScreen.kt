@@ -4,16 +4,21 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -29,13 +34,17 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.flpzarato.controlegastos.data.local.entity.ExpenseEntity
+import com.flpzarato.controlegastos.data.local.entity.PaymentMethod
 import com.flpzarato.controlegastos.ui.common.ControleGastosTopBar
 import com.flpzarato.controlegastos.ui.common.EmptyState
+import com.flpzarato.controlegastos.ui.common.paymentMethodIcon
+import com.flpzarato.controlegastos.ui.common.paymentMethodLabel
 import java.text.NumberFormat
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -66,6 +75,38 @@ fun PersonPaymentsScreen(
             TabRow(selectedTabIndex = selectedTab) {
                 Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }, text = { Text("Pagos") })
                 Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = { Text("A pagar") })
+            }
+
+            LazyRow(
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp, start = 16.dp, end = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                items(PaymentMethod.entries.toList()) { method ->
+                    FilterChip(
+                        selected = method in state.selectedPaymentMethods,
+                        onClick = { viewModel.onPaymentMethodFilterToggled(method) },
+                        label = { Text(paymentMethodLabel(method)) },
+                        leadingIcon = {
+                            Icon(
+                                paymentMethodIcon(method),
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                            )
+                        },
+                    )
+                }
+            }
+            LazyRow(
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp, start = 16.dp, end = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                items(state.allCategories, key = { it.id }) { category ->
+                    FilterChip(
+                        selected = category.id in state.selectedCategoryIds,
+                        onClick = { viewModel.onCategoryFilterToggled(category.id) },
+                        label = { Text(category.name) },
+                    )
+                }
             }
 
             Row(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
@@ -101,12 +142,21 @@ fun PersonPaymentsScreen(
                             ) {
                                 Column {
                                     Text(expense.description + parcelaLabel, style = MaterialTheme.typography.bodyLarge)
-                                    Text(
-                                        "${expense.purchaseDate.format(dateFormatter)} · " +
-                                            (state.categoryNames[expense.categoryId] ?: "—"),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(
+                                            "${expense.purchaseDate.format(dateFormatter)} · " +
+                                                (state.categoryNames[expense.categoryId] ?: "—"),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                        Spacer(Modifier.width(4.dp))
+                                        Icon(
+                                            paymentMethodIcon(expense.paymentMethod),
+                                            contentDescription = paymentMethodLabel(expense.paymentMethod),
+                                            modifier = Modifier.size(14.dp),
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    }
                                 }
                                 Row {
                                     Text(
