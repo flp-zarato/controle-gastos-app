@@ -13,17 +13,19 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.ElevatedCard
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -49,6 +51,9 @@ import com.flpzarato.controlegastos.data.local.entity.PaymentMethod
 import com.flpzarato.controlegastos.ui.common.CenteredLoadingIndicator
 import com.flpzarato.controlegastos.ui.common.ControleGastosTopBar
 import com.flpzarato.controlegastos.ui.common.EmptyState
+import com.flpzarato.controlegastos.ui.common.FilterOption
+import com.flpzarato.controlegastos.ui.common.FilterSection
+import com.flpzarato.controlegastos.ui.common.FiltersBottomSheet
 import com.flpzarato.controlegastos.ui.common.categoryColor
 import com.flpzarato.controlegastos.ui.common.categoryIcon
 import com.flpzarato.controlegastos.ui.common.installmentMonthsAbbreviation
@@ -70,6 +75,7 @@ fun ExpenseListScreen(
     val dateFormatter = remember { DateTimeFormatter.ofPattern("dd/MM/yyyy") }
     var pendingDeleteGroupId by remember { mutableStateOf<String?>(null) }
     var pendingUnmarkExpenseId by remember { mutableStateOf<String?>(null) }
+    var filtersSheetOpen by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = { ControleGastosTopBar(title = "Lançamentos") },
@@ -93,46 +99,19 @@ fun ExpenseListScreen(
                 )
             }
 
-            LazyRow(
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp, start = 16.dp, end = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                items(PaymentMethod.entries.toList()) { method ->
-                    FilterChip(
-                        selected = method in state.selectedPaymentMethods,
-                        onClick = { viewModel.onPaymentMethodFilterToggled(method) },
-                        label = { Text(paymentMethodLabel(method)) },
-                        leadingIcon = {
-                            Icon(
-                                paymentMethodIcon(method),
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp),
-                            )
+            Row(modifier = Modifier.fillMaxWidth().padding(top = 8.dp, start = 16.dp, end = 16.dp)) {
+                BadgedBox(
+                    badge = {
+                        if (state.activeFilterCount > 0) Badge { Text("${state.activeFilterCount}") }
+                    },
+                ) {
+                    AssistChip(
+                        onClick = {
+                            viewModel.onFiltersSheetOpened()
+                            filtersSheetOpen = true
                         },
-                    )
-                }
-            }
-            LazyRow(
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp, start = 16.dp, end = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                items(state.allCategories, key = { it.id }) { category ->
-                    FilterChip(
-                        selected = category.id in state.selectedCategoryIds,
-                        onClick = { viewModel.onCategoryFilterToggled(category.id) },
-                        label = { Text(category.name) },
-                    )
-                }
-            }
-            LazyRow(
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp, start = 16.dp, end = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                items(state.allUsers, key = { it.email }) { user ->
-                    FilterChip(
-                        selected = user.email in state.selectedUserEmails,
-                        onClick = { viewModel.onUserFilterToggled(user.email) },
-                        label = { Text(user.displayName) },
+                        label = { Text("Filtros") },
+                        leadingIcon = { Icon(Icons.Filled.FilterList, contentDescription = null) },
                     )
                 }
             }
@@ -189,22 +168,13 @@ fun ExpenseListScreen(
                                         expense.description + parcelaLabel,
                                         style = MaterialTheme.typography.bodyLarge,
                                     )
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Text(
-                                            "${expense.purchaseDate.format(dateFormatter)} · " +
-                                                "${state.categoryNames[expense.categoryId] ?: "—"} · " +
-                                                (state.userNames[expense.loggedByEmail] ?: expense.loggedByEmail),
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        )
-                                        Spacer(Modifier.width(4.dp))
-                                        Icon(
-                                            paymentMethodIcon(expense.paymentMethod),
-                                            contentDescription = paymentMethodLabel(expense.paymentMethod),
-                                            modifier = Modifier.size(14.dp),
-                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        )
-                                    }
+                                    Text(
+                                        "${expense.purchaseDate.format(dateFormatter)} · " +
+                                            "${state.categoryNames[expense.categoryId] ?: "—"} · " +
+                                            (state.userNames[expense.loggedByEmail] ?: expense.loggedByEmail),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
                                     if (expense.installmentCount > 1) {
                                         Text(
                                             "Parcelas em: " +
@@ -220,6 +190,12 @@ fun ExpenseListScreen(
                                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         )
                                     }
+                                    Icon(
+                                        paymentMethodIcon(expense.paymentMethod),
+                                        contentDescription = paymentMethodLabel(expense.paymentMethod),
+                                        modifier = Modifier.padding(top = 2.dp).size(16.dp),
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
                                 }
                                 Spacer(Modifier.width(8.dp))
                                 Column(horizontalAlignment = Alignment.End) {
@@ -287,6 +263,42 @@ fun ExpenseListScreen(
                 }) { Text("Remover") }
             },
             dismissButton = { TextButton(onClick = { pendingUnmarkExpenseId = null }) { Text("Cancelar") } },
+        )
+    }
+
+    if (filtersSheetOpen) {
+        FiltersBottomSheet(
+            sections = listOf(
+                FilterSection(
+                    title = "Forma de pagamento",
+                    options = PaymentMethod.entries.map { FilterOption(it.name, paymentMethodLabel(it)) },
+                    selectedIds = state.pendingPaymentMethods.map { it.name }.toSet(),
+                    onToggle = { id -> viewModel.onPendingPaymentMethodFilterToggled(PaymentMethod.valueOf(id)) },
+                    onAllSelected = viewModel::onPendingPaymentMethodFiltersCleared,
+                ),
+                FilterSection(
+                    title = "Categorias",
+                    options = state.allCategories.map { FilterOption(it.id, it.name) },
+                    selectedIds = state.pendingCategoryIds,
+                    onToggle = viewModel::onPendingCategoryFilterToggled,
+                    onAllSelected = viewModel::onPendingCategoryFiltersCleared,
+                ),
+                FilterSection(
+                    title = "Usuário",
+                    options = state.allUsers.map { FilterOption(it.email, it.displayName) },
+                    selectedIds = state.pendingUserEmails,
+                    onToggle = viewModel::onPendingUserFilterToggled,
+                    onAllSelected = viewModel::onPendingUserFiltersCleared,
+                ),
+            ),
+            onCancel = {
+                viewModel.onFiltersCancelled()
+                filtersSheetOpen = false
+            },
+            onApply = {
+                viewModel.onFiltersApplied()
+                filtersSheetOpen = false
+            },
         )
     }
 }

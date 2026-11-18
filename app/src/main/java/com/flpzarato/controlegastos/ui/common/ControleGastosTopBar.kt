@@ -49,7 +49,8 @@ fun ControleGastosTopBar(
     var showErrorDialog by remember { mutableStateOf(false) }
 
     TopAppBar(
-        title = { Text(title) },
+        title = { Text(title, style = MaterialTheme.typography.titleMedium) },
+        expandedHeight = 52.dp,
         navigationIcon = {
             if (onBack != null) {
                 IconButton(onClick = onBack) {

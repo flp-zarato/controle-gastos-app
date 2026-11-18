@@ -102,6 +102,42 @@ class PersonPaymentsViewModelTest {
         job.cancel()
     }
 
+    @Test
+    fun `aplicar filtro pendente atualiza a lista e o contador de filtros ativos`() = runTest(UnconfinedTestDispatcher()) {
+        val viewModel = buildViewModel()
+        val job = launch { viewModel.uiState.collect {} }
+
+        viewModel.onFiltersSheetOpened()
+        viewModel.onPendingPaymentMethodFilterToggled(PaymentMethod.CREDITO)
+
+        // Draft only — applied filters untouched until onFiltersApplied().
+        assertEquals(1, viewModel.uiState.value.paid.size)
+        assertEquals(0, viewModel.uiState.value.activeFilterCount)
+
+        viewModel.onFiltersApplied()
+
+        assertEquals(0, viewModel.uiState.value.paid.size)
+        assertEquals(1, viewModel.uiState.value.unpaid.size)
+        assertEquals(1, viewModel.uiState.value.activeFilterCount)
+
+        job.cancel()
+    }
+
+    @Test
+    fun `cancelar o rascunho de filtro nao altera os filtros aplicados`() = runTest(UnconfinedTestDispatcher()) {
+        val viewModel = buildViewModel()
+        val job = launch { viewModel.uiState.collect {} }
+
+        viewModel.onFiltersSheetOpened()
+        viewModel.onPendingPaymentMethodFilterToggled(PaymentMethod.CREDITO)
+        viewModel.onFiltersCancelled()
+
+        assertEquals(1, viewModel.uiState.value.paid.size)
+        assertEquals(0, viewModel.uiState.value.activeFilterCount)
+
+        job.cancel()
+    }
+
     private fun fakeExpense(
         id: String,
         categoryId: String,

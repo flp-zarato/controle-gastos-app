@@ -97,6 +97,47 @@ class ExpenseListViewModelTest {
         job.cancel()
     }
 
+    @Test
+    fun `aplicar filtro pendente atualiza a lista e o contador de filtros ativos`() = runTest(UnconfinedTestDispatcher()) {
+        val viewModel = buildViewModel()
+        val job = launch { viewModel.uiState.collect {} }
+
+        viewModel.onFiltersSheetOpened()
+        viewModel.onPendingCategoryFilterToggled("cat-farmacia")
+        viewModel.onPendingPaymentMethodFilterToggled(PaymentMethod.CREDITO)
+
+        // Draft only — applied filters/list untouched until onFiltersApplied().
+        assertEquals(3, viewModel.uiState.value.expenses.size)
+        assertEquals(0, viewModel.uiState.value.activeFilterCount)
+
+        viewModel.onFiltersApplied()
+
+        assertEquals(1, viewModel.uiState.value.expenses.size)
+        assertEquals(farmacia.id, viewModel.uiState.value.expenses.first().id)
+        assertEquals(2, viewModel.uiState.value.activeFilterCount)
+
+        job.cancel()
+    }
+
+    @Test
+    fun `cancelar o rascunho de filtro nao altera os filtros aplicados`() = runTest(UnconfinedTestDispatcher()) {
+        val viewModel = buildViewModel()
+        val job = launch { viewModel.uiState.collect {} }
+
+        viewModel.onUserFilterToggled("b@x.com")
+        assertEquals(1, viewModel.uiState.value.expenses.size)
+
+        viewModel.onFiltersSheetOpened()
+        viewModel.onPendingUserFiltersCleared()
+        viewModel.onPendingCategoryFilterToggled("cat-mercado")
+        viewModel.onFiltersCancelled()
+
+        assertEquals(1, viewModel.uiState.value.expenses.size)
+        assertEquals(lazer.id, viewModel.uiState.value.expenses.first().id)
+
+        job.cancel()
+    }
+
     private fun fakeExpense(id: String, categoryId: String, loggedByEmail: String, method: PaymentMethod) = ExpenseEntity(
         id = id,
         installmentGroupId = id,
