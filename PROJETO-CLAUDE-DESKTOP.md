@@ -56,8 +56,9 @@ escreve as instruções que o Claude Code vai executar depois.
   - `ui` — telas em Compose (login, lançamentos, categorias, cartões,
     recorrentes, faturas, home)
 - Fora de escopo do MVP (decisão consciente do usuário, não sugerir): foto de
-  comprovante, orçamento/alertas por categoria, marcar fatura como paga pelo
-  app, publicação na Play Store.
+  comprovante, orçamento/alertas por categoria, publicação na Play Store.
+  ("Marcar fatura como paga pelo app" deixou de ser fora de escopo — foi
+  implementado na feature de controle de pago/a pagar.)
 
 ## Como conduzir o trabalho aqui
 

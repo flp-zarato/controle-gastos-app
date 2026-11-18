@@ -138,6 +138,16 @@ quando a fatura inteira daquele cartão/competência é marcada como paga na
 tela de fatura. Clique no nome de uma pessoa na seção "Por pessoa" da tela
 Início para ver os lançamentos dela separados em "Pagos" e "A pagar".
 
+## Ícones e filtros
+
+Cada lançamento mostra um ícone pequeno indicando a forma de pagamento
+(Dinheiro, Débito, Crédito, Pix). Nas telas Lançamentos e Pagamentos por
+pessoa, chips de filtro (por forma de pagamento, categoria e, em Lançamentos,
+também por usuário) permitem restringir a lista — seleção múltipla,
+combináveis entre si e com os filtros de período já existentes. Nenhum chip
+selecionado numa dimensão significa "sem filtro" nela. Os filtros não
+persistem: resetam ao sair e voltar para a tela.
+
 ## Fora de escopo (por enquanto)
 
 Por decisão consciente, a primeira versão não inclui: foto de comprovante,

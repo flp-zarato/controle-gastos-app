@@ -60,6 +60,19 @@ em vez de um Worker dedicado. Isso evita agendar um segundo sync inteiro só pra
 pegar as linhas recém-geradas: elas já nascem `dirty` e são pegas pelo passo de
 push que vem a seguir, na mesma passada.
 
+## Pago/a pagar em Crédito: travado na camada de domínio, não só na UI
+
+A regra é: um lançamento em Crédito nunca vira "pago" por toggle individual —
+só em lote, pelo botão "Marcar fatura como paga" (`ExpenseRepository.markInvoicePaid`).
+A primeira implementação dessa regra ficou só na UI (o `onClick` do chip em
+cada tela decidia se chamava `togglePaid`), e um lugar foi esquecido
+(`InvoiceDetailScreen` permitia marcar item a item, por fora do botão em
+lote). Por isso a trava real está em `PaymentStatusRules.canManuallyMarkPaid`
+e é aplicada em `ExpenseRepository.markPaid`, que lança exceção para um id de
+Crédito — a UI também bloqueia o clique (defesa em profundidade), mas a
+garantia que importa é a da camada de dados, não a de cada tela lembrar de
+checar a forma de pagamento.
+
 ## Agendamento: imediato + periódico, nunca só um dos dois
 
 `requestImmediateSync()` dispara assim que há uma escrita local (resposta
