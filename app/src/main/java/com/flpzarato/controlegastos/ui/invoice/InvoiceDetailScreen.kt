@@ -118,8 +118,6 @@ fun InvoiceDetailScreen(
                                     onClick = {
                                         if (expense.paid) {
                                             pendingUnmarkExpenseId = expense.id
-                                        } else {
-                                            viewModel.togglePaid(expense.id, paid = true)
                                         }
                                     },
                                 )

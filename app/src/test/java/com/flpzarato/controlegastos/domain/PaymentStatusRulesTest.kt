@@ -41,4 +41,17 @@ class PaymentStatusRulesTest {
         )
         assertEquals(false, result)
     }
+
+    @Test
+    fun `credito nao pode ser marcado como pago manualmente`() {
+        val result = PaymentStatusRules.canManuallyMarkPaid(PaymentMethod.CREDITO)
+        assertEquals(false, result)
+    }
+
+    @Test
+    fun `dinheiro debito e pix podem ser marcados como pagos manualmente`() {
+        assertEquals(true, PaymentStatusRules.canManuallyMarkPaid(PaymentMethod.DINHEIRO))
+        assertEquals(true, PaymentStatusRules.canManuallyMarkPaid(PaymentMethod.DEBITO))
+        assertEquals(true, PaymentStatusRules.canManuallyMarkPaid(PaymentMethod.PIX))
+    }
 }

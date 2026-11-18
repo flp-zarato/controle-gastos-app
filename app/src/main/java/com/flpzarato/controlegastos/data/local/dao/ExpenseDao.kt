@@ -28,6 +28,9 @@ interface ExpenseDao {
     @Query("SELECT * FROM expenses WHERE installmentGroupId = :groupId AND deleted = 0")
     suspend fun getByGroup(groupId: String): List<ExpenseEntity>
 
+    @Query("SELECT * FROM expenses WHERE id = :id")
+    suspend fun getById(id: String): ExpenseEntity?
+
     /** Every (non-deleted) expense charged to a card, across all competências — used by the fatura screens. */
     @Query("SELECT * FROM expenses WHERE cardId = :cardId AND deleted = 0 ORDER BY competenceMonth DESC, purchaseDate DESC")
     fun observeByCard(cardId: String): Flow<List<ExpenseEntity>>

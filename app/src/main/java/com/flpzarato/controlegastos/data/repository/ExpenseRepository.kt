@@ -5,6 +5,7 @@ import com.flpzarato.controlegastos.data.local.dao.ExpenseDao
 import com.flpzarato.controlegastos.data.local.entity.ExpenseEntity
 import com.flpzarato.controlegastos.data.local.entity.PaymentMethod
 import com.flpzarato.controlegastos.domain.InstallmentCalculator
+import com.flpzarato.controlegastos.domain.PaymentStatusRules
 import com.flpzarato.controlegastos.sync.SyncScheduler
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -193,6 +194,10 @@ class ExpenseRepository @Inject constructor(
     }
 
     suspend fun markPaid(id: String) {
+        val expense = expenseDao.getById(id)
+        if (expense != null && !PaymentStatusRules.canManuallyMarkPaid(expense.paymentMethod)) {
+            error("Lançamentos em crédito só podem ser marcados como pagos pela fatura")
+        }
         expenseDao.markPaid(id)
         syncScheduler.requestImmediateSync()
     }

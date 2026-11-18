@@ -11,4 +11,8 @@ object PaymentStatusRules {
      */
     fun autoMarksAsPaidOnCreation(paymentMethod: PaymentMethod, isFromRecurringTemplate: Boolean): Boolean =
         paymentMethod != PaymentMethod.CREDITO && !isFromRecurringTemplate
+
+    /** Crédito só pode virar pago em lote, via fatura — nunca por toggle manual individual. */
+    fun canManuallyMarkPaid(paymentMethod: PaymentMethod): Boolean =
+        paymentMethod != PaymentMethod.CREDITO
 }

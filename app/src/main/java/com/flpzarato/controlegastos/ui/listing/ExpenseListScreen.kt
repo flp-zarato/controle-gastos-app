@@ -43,6 +43,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.flpzarato.controlegastos.data.local.entity.PaymentMethod
 import com.flpzarato.controlegastos.ui.common.CenteredLoadingIndicator
 import com.flpzarato.controlegastos.ui.common.ControleGastosTopBar
 import com.flpzarato.controlegastos.ui.common.EmptyState
@@ -175,7 +176,7 @@ fun ExpenseListScreen(
                                         onClick = {
                                             if (expense.paid) {
                                                 pendingUnmarkExpenseId = expense.id
-                                            } else {
+                                            } else if (expense.paymentMethod != PaymentMethod.CREDITO) {
                                                 viewModel.togglePaid(expense.id, paid = true)
                                             }
                                         },
