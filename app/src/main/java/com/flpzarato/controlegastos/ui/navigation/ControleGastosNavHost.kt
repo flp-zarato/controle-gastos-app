@@ -32,6 +32,7 @@ import com.flpzarato.controlegastos.ui.invoice.InvoiceDetailScreen
 import com.flpzarato.controlegastos.ui.invoice.InvoiceListScreen
 import com.flpzarato.controlegastos.ui.listing.ExpenseListScreen
 import com.flpzarato.controlegastos.ui.login.LoginScreen
+import com.flpzarato.controlegastos.ui.payments.PersonPaymentsScreen
 import com.flpzarato.controlegastos.ui.recurring.RecurringFormScreen
 import com.flpzarato.controlegastos.ui.recurring.RecurringListScreen
 
@@ -48,11 +49,13 @@ object Routes {
     const val EDITAR_RECORRENTE = "editar_recorrente"
     const val FATURAS = "faturas"
     const val FATURA_DETALHE = "fatura_detalhe"
+    const val PAGAMENTOS_PESSOA = "pagamentos_pessoa"
 
     fun editarGastoRoute(groupId: String) = "$EDITAR_GASTO/$groupId"
     fun editarRecorrenteRoute(id: String) = "$EDITAR_RECORRENTE/$id"
     fun faturasRoute(cardId: String) = "$FATURAS/$cardId"
     fun faturaDetalheRoute(cardId: String, competence: String) = "$FATURA_DETALHE/$cardId/$competence"
+    fun pagamentosPessoaRoute(email: String) = "$PAGAMENTOS_PESSOA/$email"
 }
 
 private data class BottomDestination(val route: String, val label: String, val icon: androidx.compose.ui.graphics.vector.ImageVector)
@@ -107,7 +110,13 @@ fun ControleGastosNavHost() {
                         }
                     })
                 }
-                composable(Routes.INICIO) { HomeScreen() }
+                composable(Routes.INICIO) {
+                    HomeScreen(
+                        onOpenPersonPayments = { email ->
+                            navController.navigate(Routes.pagamentosPessoaRoute(email))
+                        },
+                    )
+                }
                 composable(Routes.LANCAMENTOS) {
                     ExpenseListScreen(
                         onAddExpense = { navController.navigate(Routes.NOVO_GASTO) },
@@ -174,6 +183,12 @@ fun ControleGastosNavHost() {
                     ),
                 ) {
                     InvoiceDetailScreen(onBack = { navController.popBackStack() })
+                }
+                composable(
+                    route = "${Routes.PAGAMENTOS_PESSOA}/{email}",
+                    arguments = listOf(navArgument("email") { type = NavType.StringType }),
+                ) {
+                    PersonPaymentsScreen(onBack = { navController.popBackStack() })
                 }
             }
         }

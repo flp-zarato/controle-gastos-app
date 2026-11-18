@@ -49,6 +49,7 @@ import com.flpzarato.controlegastos.ui.common.EmptyState
 import com.flpzarato.controlegastos.ui.common.categoryColor
 import com.flpzarato.controlegastos.ui.common.categoryIcon
 import com.flpzarato.controlegastos.ui.common.installmentMonthsAbbreviation
+import com.flpzarato.controlegastos.ui.invoice.PaymentStatusChip
 import java.text.NumberFormat
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -63,6 +64,7 @@ fun ExpenseListScreen(
     val currencyFormat = remember(Locale("pt", "BR")) { NumberFormat.getCurrencyInstance(Locale("pt", "BR")) }
     val dateFormatter = remember { DateTimeFormatter.ofPattern("dd/MM/yyyy") }
     var pendingDeleteGroupId by remember { mutableStateOf<String?>(null) }
+    var pendingUnmarkExpenseId by remember { mutableStateOf<String?>(null) }
 
     Scaffold(
         topBar = { ControleGastosTopBar(title = "Lançamentos") },
@@ -168,6 +170,16 @@ fun ExpenseListScreen(
                                         style = MaterialTheme.typography.titleSmall,
                                         fontWeight = FontWeight.Bold,
                                     )
+                                    PaymentStatusChip(
+                                        paid = expense.paid,
+                                        onClick = {
+                                            if (expense.paid) {
+                                                pendingUnmarkExpenseId = expense.id
+                                            } else {
+                                                viewModel.togglePaid(expense.id, paid = true)
+                                            }
+                                        },
+                                    )
                                     Row {
                                         IconButton(onClick = { onEditExpense(expense.installmentGroupId) }) {
                                             Icon(Icons.Filled.Edit, contentDescription = "Editar")
@@ -202,6 +214,21 @@ fun ExpenseListScreen(
                 }) { Text("Excluir") }
             },
             dismissButton = { TextButton(onClick = { pendingDeleteGroupId = null }) { Text("Cancelar") } },
+        )
+    }
+
+    pendingUnmarkExpenseId?.let { expenseId ->
+        AlertDialog(
+            onDismissRequest = { pendingUnmarkExpenseId = null },
+            title = { Text("Remover marcação de pago?") },
+            text = { Text("Remover a marcação de pago desse lançamento?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.togglePaid(expenseId, paid = false)
+                    pendingUnmarkExpenseId = null
+                }) { Text("Remover") }
+            },
+            dismissButton = { TextButton(onClick = { pendingUnmarkExpenseId = null }) { Text("Cancelar") } },
         )
     }
 }

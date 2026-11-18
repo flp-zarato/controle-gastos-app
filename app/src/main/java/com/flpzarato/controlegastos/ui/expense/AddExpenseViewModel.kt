@@ -11,6 +11,7 @@ import com.flpzarato.controlegastos.data.repository.CardRepository
 import com.flpzarato.controlegastos.data.repository.CategoryRepository
 import com.flpzarato.controlegastos.data.repository.ExpenseRepository
 import com.flpzarato.controlegastos.domain.InstallmentCalculator
+import com.flpzarato.controlegastos.domain.PaymentStatusRules
 import com.flpzarato.controlegastos.ui.common.bigDecimalToCentsString
 import com.flpzarato.controlegastos.ui.common.centsStringToBigDecimal
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -42,6 +43,8 @@ data class AddExpenseFormState(
     val saved: Boolean = false,
     /** Non-null while the credit-card invoice warning dialog is awaiting confirmation; holds the computed "yyyy-MM". */
     val invoiceWarningMonth: String? = null,
+    /** True while the one-time auto-paid acceptance dialog is awaiting the user's decision. */
+    val autoPaidPrompt: Boolean = false,
     /** Set only when editing: who originally logged this, preserved instead of swapped to the editor. */
     val originalLoggedByEmail: String? = null,
     /** Set only when editing: the group's current competência, used as the baseline the warning compares against. */
@@ -120,9 +123,16 @@ class AddExpenseViewModel @Inject constructor(
 
     fun dismissInvoiceWarning() = update { it.copy(invoiceWarningMonth = null) }
 
+    fun confirmAutoPaidPrompt() {
+        viewModelScope.launch { userPreferences.saveAutoPaidAccepted() }
+        attemptSave(skipWarning = true, skipAutoPaidPrompt = true, forcePaid = true)
+    }
+
+    fun dismissAutoPaidPrompt() = update { it.copy(autoPaidPrompt = false) }
+
     fun consumeSavedFlag() = update { it.copy(saved = false) }
 
-    private fun attemptSave(skipWarning: Boolean) {
+    private fun attemptSave(skipWarning: Boolean, skipAutoPaidPrompt: Boolean = false, forcePaid: Boolean? = null) {
         val current = _form.value
         val amount = centsStringToBigDecimal(current.amount)
         val categoryId = current.categoryId
@@ -155,7 +165,20 @@ class AddExpenseViewModel @Inject constructor(
                     }
                 }
 
-                update { it.copy(invoiceWarningMonth = null, isSaving = true, error = null) }
+                val paid = forcePaid ?: run {
+                    val autoMarksAsPaid = editingGroupId == null &&
+                        PaymentStatusRules.autoMarksAsPaidOnCreation(
+                            paymentMethod = current.paymentMethod,
+                            isFromRecurringTemplate = false,
+                        )
+                    if (autoMarksAsPaid && !skipAutoPaidPrompt && !userPreferences.autoPaidAccepted.first()) {
+                        update { it.copy(invoiceWarningMonth = null, autoPaidPrompt = true, error = null) }
+                        return@launch
+                    }
+                    autoMarksAsPaid
+                }
+
+                update { it.copy(invoiceWarningMonth = null, autoPaidPrompt = false, isSaving = true, error = null) }
                 runCatching {
                     val email = current.originalLoggedByEmail
                         ?: requireNotNull(userPreferences.signedInEmail.first()) { "Usuário não autenticado" }
@@ -185,6 +208,7 @@ class AddExpenseViewModel @Inject constructor(
                             cardId = current.cardId,
                             installmentCount = installmentCount,
                             observation = observation,
+                            paid = paid,
                         )
                     }
                 }.onSuccess {

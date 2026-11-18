@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import java.math.BigDecimal
 import javax.inject.Inject
 
@@ -21,11 +22,14 @@ data class InvoiceDetailUiState(
     val expenses: List<ExpenseEntity> = emptyList(),
     val categoryNames: Map<String, String> = emptyMap(),
     val userNames: Map<String, String> = emptyMap(),
-)
+) {
+    val paidCount: Int get() = expenses.count { it.paid }
+    val allPaid: Boolean get() = expenses.isNotEmpty() && paidCount == expenses.size
+}
 
 @HiltViewModel
 class InvoiceDetailViewModel @Inject constructor(
-    expenseRepository: ExpenseRepository,
+    private val expenseRepository: ExpenseRepository,
     categoryDao: CategoryDao,
     userDao: UserDao,
     savedStateHandle: SavedStateHandle,
@@ -49,4 +53,14 @@ class InvoiceDetailViewModel @Inject constructor(
             userNames = users.associate { it.email to it.displayName },
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), InvoiceDetailUiState())
+
+    fun markInvoicePaid() {
+        viewModelScope.launch { expenseRepository.markInvoicePaid(cardId, competenceMonth) }
+    }
+
+    fun togglePaid(expenseId: String, paid: Boolean) {
+        viewModelScope.launch {
+            if (paid) expenseRepository.markPaid(expenseId) else expenseRepository.markUnpaid(expenseId)
+        }
+    }
 }

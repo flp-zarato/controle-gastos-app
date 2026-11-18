@@ -27,6 +27,7 @@ fun ExpenseEntity.toRow(): List<String> = listOf(
     deleted.toString(),
     observation.orEmpty(),
     recurringTemplateId.orEmpty(),
+    paid.toString(),
 )
 
 fun List<String>.toExpenseEntity(): ExpenseEntity? {
@@ -51,6 +52,7 @@ fun List<String>.toExpenseEntity(): ExpenseEntity? {
         loggedByEmail = cell(10) ?: return null,
         observation = cell(12),
         recurringTemplateId = cell(13),
+        paid = cell(14)?.toBoolean() ?: false,
         dirty = false,
         deleted = cell(11)?.toBoolean() ?: false,
     )

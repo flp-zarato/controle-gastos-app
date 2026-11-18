@@ -44,7 +44,7 @@ na primeira linha (os dados começam na linha 2):
 
 | Aba | Colunas (linha 1) |
 |---|---|
-| `Lançamentos` | ID, DataCompra, Competencia, Descricao, CategoriaId, ValorParcela, ValorTotalOriginal, Parcela, FormaPagamento, CartaoId, QuemLancou, Deletado, Observacao, RecorrenteId |
+| `Lançamentos` | ID, DataCompra, Competencia, Descricao, CategoriaId, ValorParcela, ValorTotalOriginal, Parcela, FormaPagamento, CartaoId, QuemLancou, Deletado, Observacao, RecorrenteId, Pago |
 | `Categorias` | ID, Nome, Deletado |
 | `Cartões` | ID, Apelido, TitularEmail, Banco, DiaFechamento, DiaVencimento, Deletado |
 | `Usuários` | Email, Nome |
@@ -52,6 +52,10 @@ na primeira linha (os dados começam na linha 2):
 
 Compartilhe essa planilha (botão "Compartilhar") com a conta Google da sua esposa,
 dando permissão de **Editor**.
+
+Se você já tem uma planilha de uma versão anterior do app (sem a coluna `Pago`),
+adicione-a manualmente na próxima vez que abrir a planilha — o app não cria a
+coluna sozinho, só passa a ler/escrever nela a partir desta versão.
 
 Pegue o **ID da planilha**: é o trecho na URL entre `/d/` e `/edit`, por exemplo
 `https://docs.google.com/spreadsheets/d/`**`1A2B3C...xyz`**`/edit` — você vai colar
@@ -124,12 +128,21 @@ e rode no emulador ou num celular físico. Pelo terminal:
 O APK fica em `app/build/outputs/apk/debug/app-debug.apk` — copie para o celular e
 instale manualmente (ative "Instalar de fontes desconhecidas" no Android).
 
+## Controle de pago / a pagar
+
+Cada lançamento (parcela) tem um status de pagamento: Dinheiro/Débito/Pix
+avulso nasce pago automaticamente (depois de um aceite único, já que o valor
+sai da conta no ato); lançamentos de Recorrente nascem sempre "a pagar",
+mesmo em Dinheiro/Débito/Pix; e parcelas no Crédito só viram pagas em lote,
+quando a fatura inteira daquele cartão/competência é marcada como paga na
+tela de fatura. Clique no nome de uma pessoa na seção "Por pessoa" da tela
+Início para ver os lançamentos dela separados em "Pagos" e "A pagar".
+
 ## Fora de escopo (por enquanto)
 
 Por decisão consciente, a primeira versão não inclui: foto de comprovante,
-orçamento/alertas por categoria, marcar fatura como paga (isso continua só na
-planilha), nem publicação na Play Store — tudo isso foi discutido e deixado de
-fora do MVP para manter o app simples.
+orçamento/alertas por categoria, nem publicação na Play Store — tudo isso foi
+discutido e deixado de fora do MVP para manter o app simples.
 
 ## Licença
 

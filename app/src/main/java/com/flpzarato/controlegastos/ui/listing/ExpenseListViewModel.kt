@@ -68,4 +68,10 @@ class ExpenseListViewModel @Inject constructor(
     fun deleteGroup(groupId: String) {
         viewModelScope.launch { expenseRepository.deleteGroup(groupId) }
     }
+
+    fun togglePaid(expenseId: String, paid: Boolean) {
+        viewModelScope.launch {
+            if (paid) expenseRepository.markPaid(expenseId) else expenseRepository.markUnpaid(expenseId)
+        }
+    }
 }

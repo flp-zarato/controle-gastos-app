@@ -57,6 +57,7 @@ class ExpenseRepository @Inject constructor(
         installmentCount: Int,
         observation: String? = null,
         recurringTemplateId: String? = null,
+        paid: Boolean = false,
     ) {
         insertExpenseRows(
             description = description,
@@ -69,6 +70,7 @@ class ExpenseRepository @Inject constructor(
             installmentCount = installmentCount,
             observation = observation,
             recurringTemplateId = recurringTemplateId,
+            paid = paid,
         )
         syncScheduler.requestImmediateSync()
     }
@@ -89,6 +91,7 @@ class ExpenseRepository @Inject constructor(
         installmentCount: Int,
         observation: String? = null,
         recurringTemplateId: String? = null,
+        paid: Boolean = false,
     ) {
         val groupId = UUID.randomUUID().toString()
 
@@ -118,6 +121,7 @@ class ExpenseRepository @Inject constructor(
                         loggedByEmail = loggedByEmail,
                         observation = observation,
                         recurringTemplateId = recurringTemplateId,
+                        paid = paid,
                         dirty = true,
                     ),
                 )
@@ -139,6 +143,7 @@ class ExpenseRepository @Inject constructor(
                     loggedByEmail = loggedByEmail,
                     observation = observation,
                     recurringTemplateId = recurringTemplateId,
+                    paid = paid,
                     dirty = true,
                 ),
             )
@@ -168,6 +173,10 @@ class ExpenseRepository @Inject constructor(
         installmentCount: Int,
         observation: String? = null,
     ) {
+        // Fetched before markGroupDeleted, which flips deleted = true and would make
+        // getByGroup (deleted = 0) return nothing. Editing must never reset or reapply the
+        // auto-paid rule, so the original group's paid status always carries over as-is.
+        val originalPaid = expenseDao.getByGroup(oldGroupId).firstOrNull()?.paid ?: false
         expenseDao.markGroupDeleted(oldGroupId)
         addExpense(
             description = description,
@@ -179,6 +188,22 @@ class ExpenseRepository @Inject constructor(
             cardId = cardId,
             installmentCount = installmentCount,
             observation = observation,
+            paid = originalPaid,
         )
+    }
+
+    suspend fun markPaid(id: String) {
+        expenseDao.markPaid(id)
+        syncScheduler.requestImmediateSync()
+    }
+
+    suspend fun markUnpaid(id: String) {
+        expenseDao.markUnpaid(id)
+        syncScheduler.requestImmediateSync()
+    }
+
+    suspend fun markInvoicePaid(cardId: String, competenceMonth: String) {
+        expenseDao.markInvoicePaid(cardId, competenceMonth)
+        syncScheduler.requestImmediateSync()
     }
 }

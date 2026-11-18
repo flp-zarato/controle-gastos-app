@@ -130,6 +130,15 @@ fun RecurringFormScreen(
                     )
                 }
             }
+            if (form.paymentMethod != PaymentMethod.CREDITO) {
+                Text(
+                    "Lançamentos gerados por este recorrente sempre nascem como \"a pagar\", mesmo em " +
+                        "dinheiro/débito/pix — você confirma manualmente quando o pagamento acontecer de fato.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+            }
 
             if (form.paymentMethod == PaymentMethod.CREDITO) {
                 Spacer(Modifier.height(12.dp))

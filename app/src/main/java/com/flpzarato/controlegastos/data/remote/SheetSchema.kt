@@ -13,13 +13,13 @@ object SheetSchema {
     const val TAB_USUARIOS = "Usuários"
     const val TAB_RECORRENTES = "Recorrentes"
 
-    // Column order matches ExpenseRowMapper. Observacao/RecorrenteId were appended after
-    // the original 12 columns, so existing rows/sheets never need to be reordered.
-    const val RANGE_LANCAMENTOS = "$TAB_LANCAMENTOS!A2:N"
+    // Column order matches ExpenseRowMapper. Observacao/RecorrenteId/Pago were appended after
+    // the original columns, so existing rows/sheets never need to be reordered.
+    const val RANGE_LANCAMENTOS = "$TAB_LANCAMENTOS!A2:O"
     val HEADER_LANCAMENTOS = listOf(
         "ID", "DataCompra", "Competencia", "Descricao", "CategoriaId",
         "ValorParcela", "ValorTotalOriginal", "Parcela", "FormaPagamento",
-        "CartaoId", "QuemLancou", "Deletado", "Observacao", "RecorrenteId",
+        "CartaoId", "QuemLancou", "Deletado", "Observacao", "RecorrenteId", "Pago",
     )
 
     const val RANGE_CATEGORIAS = "$TAB_CATEGORIAS!A2:C"

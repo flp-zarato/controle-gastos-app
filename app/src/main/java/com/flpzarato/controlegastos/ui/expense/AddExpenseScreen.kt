@@ -193,6 +193,22 @@ fun AddExpenseScreen(
             dismissButton = { TextButton(onClick = viewModel::dismissInvoiceWarning) { Text("Revisar") } },
         )
     }
+
+    if (form.autoPaidPrompt) {
+        AlertDialog(
+            onDismissRequest = viewModel::dismissAutoPaidPrompt,
+            title = { Text("Atenção") },
+            text = {
+                Text(
+                    "Lançamentos em Dinheiro, Débito ou Pix serão marcados como pagos " +
+                        "automaticamente, já que o valor sai da conta no ato. Você pode desmarcar " +
+                        "manualmente depois, se precisar.",
+                )
+            },
+            confirmButton = { TextButton(onClick = viewModel::confirmAutoPaidPrompt) { Text("Confirmar") } },
+            dismissButton = { TextButton(onClick = viewModel::dismissAutoPaidPrompt) { Text("Revisar") } },
+        )
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

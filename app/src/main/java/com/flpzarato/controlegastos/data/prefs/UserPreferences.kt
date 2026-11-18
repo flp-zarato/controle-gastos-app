@@ -23,6 +23,7 @@ class UserPreferences @Inject constructor(
         val SPREADSHEET_ID = stringPreferencesKey("spreadsheet_id")
         val LAST_SYNC_EPOCH_MS = longPreferencesKey("last_sync_epoch_ms")
         val ONBOARDING_DONE = booleanPreferencesKey("onboarding_done")
+        val AUTO_PAID_ACCEPTED = booleanPreferencesKey("auto_paid_accepted")
     }
 
     val signedInEmail: Flow<String?> = context.dataStore.data.map { it[Keys.SIGNED_IN_EMAIL] }
@@ -30,6 +31,7 @@ class UserPreferences @Inject constructor(
     val spreadsheetId: Flow<String?> = context.dataStore.data.map { it[Keys.SPREADSHEET_ID] }
     val lastSyncEpochMs: Flow<Long?> = context.dataStore.data.map { it[Keys.LAST_SYNC_EPOCH_MS] }
     val isOnboardingDone: Flow<Boolean> = context.dataStore.data.map { it[Keys.ONBOARDING_DONE] ?: false }
+    val autoPaidAccepted: Flow<Boolean> = context.dataStore.data.map { it[Keys.AUTO_PAID_ACCEPTED] ?: false }
 
     suspend fun saveSignedInUser(email: String, displayName: String) {
         context.dataStore.edit {
@@ -47,6 +49,10 @@ class UserPreferences @Inject constructor(
 
     suspend fun saveLastSync(epochMs: Long) {
         context.dataStore.edit { it[Keys.LAST_SYNC_EPOCH_MS] = epochMs }
+    }
+
+    suspend fun saveAutoPaidAccepted() {
+        context.dataStore.edit { it[Keys.AUTO_PAID_ACCEPTED] = true }
     }
 
     suspend fun signOut() {

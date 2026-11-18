@@ -67,4 +67,16 @@ interface ExpenseDao {
 
     @Query("DELETE FROM expenses WHERE installmentGroupId = :groupId")
     suspend fun hardDeleteGroup(groupId: String)
+
+    @Query("UPDATE expenses SET paid = 1, dirty = 1 WHERE id = :id")
+    suspend fun markPaid(id: String)
+
+    @Query("UPDATE expenses SET paid = 0, dirty = 1 WHERE id = :id")
+    suspend fun markUnpaid(id: String)
+
+    @Query(
+        "UPDATE expenses SET paid = 1, dirty = 1 WHERE cardId = :cardId AND competenceMonth = :competenceMonth " +
+            "AND deleted = 0 AND paid = 0",
+    )
+    suspend fun markInvoicePaid(cardId: String, competenceMonth: String)
 }

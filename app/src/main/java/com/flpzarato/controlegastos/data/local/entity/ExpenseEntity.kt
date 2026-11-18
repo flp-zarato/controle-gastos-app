@@ -46,6 +46,13 @@ data class ExpenseEntity(
     val observation: String? = null,
     /** Set only on expenses auto-generated from a recurring template; used to avoid relaunching the same month twice. */
     val recurringTemplateId: String? = null,
+    /**
+     * Credito: never set by the individual installment, only in bulk when the whole invoice
+     * (card + competência) is marked paid. Dinheiro/Debito/Pix: true automatically for expenses
+     * created directly (not from a recurring template), once the user has accepted that
+     * behavior; a recurring-generated expense always starts false regardless.
+     */
+    val paid: Boolean = false,
     val dirty: Boolean = false,
     val deleted: Boolean = false,
 )
